@@ -1,5 +1,6 @@
 import os
 
+import dotenv
 import yaml
 
 from resumegen.cli import app
@@ -18,6 +19,8 @@ def install_default_config():
 
 
 def main():
+    env_path = os.getenv("RESUMEGEN_ENV_PATH", ".env")
+    dotenv.load_dotenv(env_path)
     install_default_config()
     app()
 
