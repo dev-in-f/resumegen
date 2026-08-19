@@ -1,6 +1,8 @@
+import logging
 from pathlib import Path
 from typing import Optional
 
+import yaml
 from pydantic import BaseModel, field_validator
 
 # ruff: noqa: UP045
@@ -63,8 +65,8 @@ class EducationEntry(BaseModel):
 class ResumeData(BaseModel):
     personal_info: PersonalInfo
     statement: Optional[str] = None
-    skills: list[SkillsSubsection] = []
-    experiences: list[ExperienceEntry] = []
+    skill_sections: list[SkillsSubsection] = []
+    experience: list[ExperienceEntry] = []
     projects: list[ProjectEntry] = []
     education: list[EducationEntry] = []
 
@@ -87,12 +89,11 @@ class DocumentConfig(BaseModel):
             )
         return str(path.resolve())
 
-    resume: ResumeData
+    resume_data: ResumeData
 
 
 def load_yaml_config(file_path: Path) -> DocumentConfig:
-    import yaml
-
     with open(file_path) as f:
         data = yaml.safe_load(f)
+        logging.debug(f"Loaded YAML data: {data}")
     return DocumentConfig(**data)

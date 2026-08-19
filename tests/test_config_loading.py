@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from src.config import (
+from resumegen.config import (
     DocumentConfig,
     DocumentMeta,
     EducationEntry,
@@ -21,11 +21,12 @@ from src.config import (
 # ---------------------------------------------------------------------------
 
 
-def make_template(tmp_path: Path) -> Path:
-    """Create a minimal template file so DocumentConfig validation passes."""
-    t = tmp_path / "resume.html"
-    t.write_text("<html></html>")
-    return t
+def make_template_dir(tmp_path: Path) -> Path:
+    """Create a minimal template directory so DocumentConfig validation passes."""
+    d = tmp_path / "template"
+    d.mkdir()
+    (d / "template.html.j2").write_text("<html></html>")
+    return d
 
 
 def minimal_resume_data() -> dict:
@@ -208,8 +209,8 @@ class TestResumeData:
             personal_info=PersonalInfo(name="Jane", email="j@e.com", location="NYC")
         )
         assert r.statement is None
-        assert r.skills == []
-        assert r.experiences == []
+        assert r.skill_sections == []
+        assert r.experience == []
         assert r.projects == []
         assert r.education == []
 
@@ -217,7 +218,7 @@ class TestResumeData:
         r = ResumeData(
             personal_info={"name": "Jane", "email": "j@e.com", "location": "NYC"},
             statement="Passionate engineer.",
-            experiences=[
+            experience=[
                 {
                     "title": "SWE",
                     "company": "Acme",
@@ -235,7 +236,7 @@ class TestResumeData:
             ],
         )
         assert r.statement == "Passionate engineer."
-        assert len(r.experiences) == 1
+        assert len(r.experience) == 1
         assert len(r.projects) == 1
         assert len(r.education) == 1
 
@@ -246,46 +247,71 @@ class TestResumeData:
 
 class TestDocumentConfig:
     def test_valid(self, tmp_path):
-        template = make_template(tmp_path)
+        template_dir = make_template_dir(tmp_path)
         config = DocumentConfig(
             meta={"title": "Resume", "author": "Jane"},
-            template=str(template),
-            resume=minimal_resume_data(),
+            template_dir=str(template_dir),
+            resume_data=minimal_resume_data(),
         )
-        assert Path(config.template).exists()
+        assert Path(config.template_dir).is_dir()
+        assert (Path(config.template_dir) / "template.html.j2").exists()
 
-    def test_template_path_resolved_to_absolute(self, tmp_path):
-        template = make_template(tmp_path)
+    def test_template_dir_resolved_to_absolute(self, tmp_path):
+        template_dir = make_template_dir(tmp_path)
         config = DocumentConfig(
             meta={"title": "Resume", "author": "Jane"},
-            template=str(template),
-            resume=minimal_resume_data(),
+            template_dir=str(template_dir),
+            resume_data=minimal_resume_data(),
         )
-        assert Path(config.template).is_absolute()
+        assert Path(config.template_dir).is_absolute()
 
-    def test_nonexistent_template_raises(self, tmp_path):
+    def test_nonexistent_template_dir_raises(self, tmp_path):
         with pytest.raises(ValidationError) as exc_info:
             DocumentConfig(
                 meta={"title": "Resume", "author": "Jane"},
-                template=str(tmp_path / "missing.html"),
-                resume=minimal_resume_data(),
+                template_dir=str(tmp_path / "missing"),
+                resume_data=minimal_resume_data(),
             )
         assert "does not exist" in str(exc_info.value)
 
-    def test_missing_meta_raises(self, tmp_path):
-        template = make_template(tmp_path)
-        with pytest.raises(ValidationError) as exc_info:
-            DocumentConfig(template=str(template), resume=minimal_resume_data())
-        assert "meta" in str(exc_info.value)
-
-    def test_missing_resume_raises(self, tmp_path):
-        template = make_template(tmp_path)
+    def test_template_dir_not_a_directory_raises(self, tmp_path):
+        not_a_dir = tmp_path / "template.html.j2"
+        not_a_dir.write_text("<html></html>")
         with pytest.raises(ValidationError) as exc_info:
             DocumentConfig(
                 meta={"title": "Resume", "author": "Jane"},
-                template=str(template),
+                template_dir=str(not_a_dir),
+                resume_data=minimal_resume_data(),
             )
-        assert "resume" in str(exc_info.value)
+        assert "is not a directory" in str(exc_info.value)
+
+    def test_template_dir_missing_template_file_raises(self, tmp_path):
+        empty_dir = tmp_path / "empty_template"
+        empty_dir.mkdir()
+        with pytest.raises(ValidationError) as exc_info:
+            DocumentConfig(
+                meta={"title": "Resume", "author": "Jane"},
+                template_dir=str(empty_dir),
+                resume_data=minimal_resume_data(),
+            )
+        assert "must contain a template.html.j2 file" in str(exc_info.value)
+
+    def test_missing_meta_raises(self, tmp_path):
+        template_dir = make_template_dir(tmp_path)
+        with pytest.raises(ValidationError) as exc_info:
+            DocumentConfig(
+                template_dir=str(template_dir), resume_data=minimal_resume_data()
+            )
+        assert "meta" in str(exc_info.value)
+
+    def test_missing_resume_raises(self, tmp_path):
+        template_dir = make_template_dir(tmp_path)
+        with pytest.raises(ValidationError) as exc_info:
+            DocumentConfig(
+                meta={"title": "Resume", "author": "Jane"},
+                template_dir=str(template_dir),
+            )
+        assert "resume_data" in str(exc_info.value)
 
 
 class TestLoadYamlConfig:
@@ -295,15 +321,15 @@ class TestLoadYamlConfig:
         return p
 
     def test_valid_minimal_yaml(self, tmp_path):
-        template = make_template(tmp_path)
+        template_dir = make_template_dir(tmp_path)
         yaml_file = self._write_yaml(
             tmp_path,
             f"""\
             meta:
               title: My Resume
               author: Jane Doe
-            template: {template}
-            resume:
+            template_dir: {template_dir}
+            resume_data:
               personal_info:
                 name: Jane Doe
                 email: jane@example.com
@@ -312,10 +338,10 @@ class TestLoadYamlConfig:
         )
         config = load_yaml_config(yaml_file)
         assert config.meta.title == "My Resume"
-        assert config.resume.personal_info.name == "Jane Doe"
+        assert config.resume_data.personal_info.name == "Jane Doe"
 
     def test_valid_full_yaml(self, tmp_path):
-        template = make_template(tmp_path)
+        template_dir = make_template_dir(tmp_path)
         yaml_file = self._write_yaml(
             tmp_path,
             f"""\
@@ -326,8 +352,8 @@ class TestLoadYamlConfig:
               keywords:
                 - python
                 - devops
-            template: {template}
-            resume:
+            template_dir: {template_dir}
+            resume_data:
               personal_info:
                 name: Jane Doe
                 email: jane@example.com
@@ -336,12 +362,12 @@ class TestLoadYamlConfig:
                 linkedin: https://linkedin.com/in/jane
                 github: https://github.com/jane
               statement: Experienced engineer.
-              skills:
+              skill_sections:
                 - title: Languages
                   skills:
                     - Python
                     - Go
-              experiences:
+              experience:
                 - title: Software Engineer
                   company: Acme Corp
                   location: NYC
@@ -362,22 +388,22 @@ class TestLoadYamlConfig:
         )
         config = load_yaml_config(yaml_file)
         assert config.meta.keywords == ["python", "devops"]
-        assert config.resume.personal_info.phone == "555-0100"
-        assert len(config.resume.experiences) == 1
-        assert config.resume.experiences[0].company == "Acme Corp"
-        assert len(config.resume.projects) == 1
-        assert config.resume.education[0].gpa == "3.8"
-        assert isinstance(config.resume.skills[0], SkillsSubsection)
+        assert config.resume_data.personal_info.phone == "555-0100"
+        assert len(config.resume_data.experience) == 1
+        assert config.resume_data.experience[0].company == "Acme Corp"
+        assert len(config.resume_data.projects) == 1
+        assert config.resume_data.education[0].gpa == "3.8"
+        assert isinstance(config.resume_data.skill_sections[0], SkillsSubsection)
 
     def test_missing_required_field_raises(self, tmp_path):
-        template = make_template(tmp_path)
+        template_dir = make_template_dir(tmp_path)
         yaml_file = self._write_yaml(
             tmp_path,
             f"""\
             meta:
               title: Resume
-            template: {template}
-            resume:
+            template_dir: {template_dir}
+            resume_data:
               personal_info:
                 name: Jane Doe
                 email: jane@example.com
@@ -392,15 +418,15 @@ class TestLoadYamlConfig:
         with pytest.raises(FileNotFoundError):
             load_yaml_config(tmp_path / "nonexistent.yaml")
 
-    def test_nonexistent_template_in_yaml_raises(self, tmp_path):
+    def test_nonexistent_template_dir_in_yaml_raises(self, tmp_path):
         yaml_file = self._write_yaml(
             tmp_path,
             """\
             meta:
               title: Resume
               author: Jane
-            template: /does/not/exist.html
-            resume:
+            template_dir: /does/not/exist
+            resume_data:
               personal_info:
                 name: Jane
                 email: jane@example.com
