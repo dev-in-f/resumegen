@@ -1,19 +1,27 @@
 [project]
-name = "resume-generator"
+name = "resumegen"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
+authors = [{ name = "dev-in-f" }]
 requires-python = ">=3.13"
 dependencies = [
-    "jinja2>=3.1.6",
-    "pikepdf>=10.7.3",
-    "pydantic>=2.13.4",
-    "pyyaml>=6.0.3",
-    "weasyprint>=69.0",
+    "jinja2",
+    "pikepdf",
+    "pydantic",
+    "pyyaml",
+    "weasyprint",
 ]
 
-[tool.ruff]
-target-version = "py313"
+[project.scripts]
+resumegen = "resumegen:main"
+
+[build-system]
+requires = ["uv_build>=0.10.2,<0.11.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = ["commitizen", "pre-commit", "pytest", "pytest-cov"]
 
 [tool.ruff.lint]
 select = ["E", "F", "B", "UP", "SIM", "I"]
@@ -29,10 +37,3 @@ tag_format = "$version"
 version_scheme = "pep440"
 version_provider = "uv"
 major_version_zero = true
-[dependency-groups]
-dev = [
-    "commitizen>=4.16.3",
-    "pre-commit>=4.6.0",
-    "pytest>=9.0.3",
-    "pytest-cov>=7.1.0",
-]
