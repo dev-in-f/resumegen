@@ -34,7 +34,7 @@ def pdf_xmp_metadata_injection(
         meta["dc:language"] = document_metadata.language
         meta["xmpRights:Owner"] = document_metadata.author
         meta["dc:subject"] = ", ".join(document_metadata.keywords)
-        meta["dc:creator"] = list(document_metadata.author)
+        meta["dc:creator"] = [document_metadata.author]
         meta["xmp:CreatorTool"] = "ResumeGen v1"
         meta["pdf:keywords"] = ", ".join(document_metadata.keywords)
         meta["pdfuaid:part"] = "1"
