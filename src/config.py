@@ -36,10 +36,15 @@ class ExperienceEntry(BaseModel):
     description_bullets: list[str] = []
 
 
+class DisplayLink(BaseModel):
+    text: str
+    url: str
+
+
 class ProjectEntry(BaseModel):
     title: str
     timeframe: Optional[str] = None
-    project_link: Optional[str] = None
+    link: Optional[DisplayLink] = None
     subtitle: Optional[str] = None
     description_bullets: list[str] = []
     technologies: list[str] = []
@@ -58,7 +63,7 @@ class EducationEntry(BaseModel):
 class ResumeData(BaseModel):
     personal_info: PersonalInfo
     statement: Optional[str] = None
-    skills: list[SkillsSubsection] | list[str] = []
+    skills: list[SkillsSubsection] = []
     experiences: list[ExperienceEntry] = []
     projects: list[ProjectEntry] = []
     education: list[EducationEntry] = []
