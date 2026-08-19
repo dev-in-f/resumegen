@@ -4,7 +4,11 @@ import dotenv
 import yaml
 
 from resumegen.cli import app
-from resumegen.config import RESUMEGEN_DATA_DIR, RESUMEGEN_DEFAULT_CONFIG_PATH, Config
+from resumegen.core.config import (
+    RESUMEGEN_DATA_DIR,
+    RESUMEGEN_DEFAULT_CONFIG_PATH,
+    Config,
+)
 
 
 def install_default_config():

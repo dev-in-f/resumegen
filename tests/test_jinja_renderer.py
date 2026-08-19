@@ -4,9 +4,9 @@ from pathlib import Path
 import pytest
 from freezegun import freeze_time
 
-from resumegen.config import Config, DocumentMetadata
-from resumegen.renderer import (
-    RenderError,
+from resumegen.core.config import Config, DocumentMetadata
+from resumegen.core.exceptions import RenderError
+from resumegen.core.renderer import (
     _render_html,
     _sanitize_metadata,
     output_html,

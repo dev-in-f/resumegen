@@ -6,10 +6,10 @@ import pikepdf
 from pikepdf import Dictionary, String
 from weasyprint import HTML
 
-from resumegen.accessibility import AccessibilityReport, scan_accessibility
-from resumegen.config import DocumentMetadata, ResumeData
-from resumegen.exceptions import PdfError
-from resumegen.renderer import RenderError, _render_html, render_output_filename
+from resumegen.core.accessibility import AccessibilityReport, scan_accessibility
+from resumegen.core.config import DocumentMetadata, ResumeData
+from resumegen.core.exceptions import PdfError
+from resumegen.core.renderer import RenderError, _render_html, render_output_filename
 
 logger = logging.getLogger(__name__)
 

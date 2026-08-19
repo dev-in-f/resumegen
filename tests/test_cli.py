@@ -7,7 +7,7 @@ import pytest
 from click.testing import CliRunner
 
 from resumegen.cli import _override_logging_options, app
-from resumegen.exceptions import PdfError, RenderError
+from resumegen.core.exceptions import PdfError, RenderError
 
 runner = CliRunner()
 

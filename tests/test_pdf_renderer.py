@@ -3,9 +3,9 @@ from unittest.mock import MagicMock, patch
 import pikepdf
 import pytest
 
-from resumegen.config import Config, DocumentMetadata
-from resumegen.exceptions import PdfError, RenderError
-from resumegen.pdf import _pdf_xmp_metadata_injection, render_pdf
+from resumegen.core.config import Config, DocumentMetadata
+from resumegen.core.exceptions import PdfError, RenderError
+from resumegen.core.pdf import _pdf_xmp_metadata_injection, render_pdf
 
 
 class TestPdfXmpMetadataInjection:
@@ -126,7 +126,7 @@ class TestRenderPdf:
             assert meta["pdfuaid:part"] == "1"
 
     def test_runs_accessibility_scan_by_default(self, minimal_resume_data):
-        with patch("resumegen.pdf.scan_accessibility") as mock_scan:
+        with patch("resumegen.core.pdf.scan_accessibility") as mock_scan:
             _, report = render_pdf(
                 self.config.template_dir,
                 self.config.template_name,
@@ -138,7 +138,7 @@ class TestRenderPdf:
         assert report is not None
 
     def test_skips_accessibility_scan_when_disabled(self, minimal_resume_data):
-        with patch("resumegen.pdf.scan_accessibility") as mock_scan:
+        with patch("resumegen.core.pdf.scan_accessibility") as mock_scan:
             render_pdf(
                 self.config.template_dir,
                 self.config.template_name,
@@ -152,7 +152,7 @@ class TestRenderPdf:
     def test_raises_when_weasyprint_returns_none(self, minimal_resume_data):
         mock_doc = MagicMock()
         mock_doc.write_pdf.return_value = None
-        with patch("resumegen.pdf.HTML") as mock_html:
+        with patch("resumegen.core.pdf.HTML") as mock_html:
             mock_html.return_value.render.return_value = mock_doc
             with pytest.raises(
                 RenderError,
@@ -170,7 +170,7 @@ class TestRenderPdf:
     def test_does_not_create_file_on_error(self, minimal_resume_data):
         mock_doc = MagicMock()
         mock_doc.write_pdf.return_value = None
-        with patch("resumegen.pdf.HTML") as mock_html:
+        with patch("resumegen.core.pdf.HTML") as mock_html:
             mock_html.return_value.render.return_value = mock_doc
             with pytest.raises(RenderError):
                 output_path, _ = render_pdf(

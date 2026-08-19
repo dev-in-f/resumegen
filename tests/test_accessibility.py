@@ -3,13 +3,13 @@ import json
 import pikepdf
 import pytest
 
-from resumegen.accessibility import (
+from resumegen.core.accessibility import (
     AccessibilityReport,
     Severity,
     _walk_struct_tree,
     scan_accessibility,
 )
-from resumegen.exceptions import PdfError
+from resumegen.core.exceptions import PdfError
 
 
 @pytest.fixture

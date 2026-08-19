@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 from pydantic import ValidationError
 
-from resumegen.config import (
+from resumegen.core.config import (
     Config,
     DisplayLink,
     DocumentMetadata,
@@ -273,7 +273,7 @@ class TestConfig:
     def test_template_dir_is_not_dir_creates_default_if_missing(
         self, tmp_path, not_a_dir_path, monkeypatch
     ):
-        with patch("resumegen.config.resources.files") as mock_files:
+        with patch("resumegen.core.config.resources.files") as mock_files:
             mock_files.return_value = tmp_path
             config = Config(template_dir=not_a_dir_path)
             assert config.template_dir.exists()
@@ -297,7 +297,7 @@ class TestConfig:
         self, tmp_path, not_a_dir_path
     ):
         missing_default = tmp_path / "nonexistent_default"
-        with patch("resumegen.config.RESUMEGEN_DATA_DIR", missing_default):
+        with patch("resumegen.core.config.RESUMEGEN_DATA_DIR", missing_default):
             config = Config(output_dir=not_a_dir_path)
             assert config.output_dir.exists()
             assert config.output_dir.is_dir()

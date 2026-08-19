@@ -8,14 +8,14 @@ from mcp.server.fastmcp import Context, FastMCP
 from mcp.server.fastmcp.prompts import base
 from pydantic import BaseModel
 
-from resumegen.accessibility import AccessibilityReport, scan_accessibility
-from resumegen.config import (
+from resumegen.core.accessibility import AccessibilityReport, scan_accessibility
+from resumegen.core.config import (
     RESUMEGEN_DATA_DIR,
     Config,
     ResumeData,
     load_yaml_to_data_model,
 )
-from resumegen.pdf import render_pdf
+from resumegen.core.pdf import render_pdf
 
 mcp = FastMCP("resumegen")
 

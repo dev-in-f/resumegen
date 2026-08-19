@@ -4,8 +4,8 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
 
-from resumegen.config import DocumentMetadata, ResumeData
-from resumegen.exceptions import RenderError
+from resumegen.core.config import DocumentMetadata, ResumeData
+from resumegen.core.exceptions import RenderError
 
 logger = logging.getLogger(__name__)
 

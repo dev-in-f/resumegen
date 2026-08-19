@@ -3,7 +3,7 @@ from enum import Enum
 import pikepdf
 from pydantic import BaseModel, computed_field
 
-from resumegen.exceptions import PdfError
+from resumegen.core.exceptions import PdfError
 
 
 class Severity(Enum):
