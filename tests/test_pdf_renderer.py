@@ -45,6 +45,7 @@ class TestPdfXmpMetadataInjection:
             assert meta["pdf:keywords"] == "python, engineer"
             assert meta["xmp:CreatorTool"] == "ResumeGen v1"
             assert meta["pdfuaid:part"] == "1"
+            assert meta["dc:creator"] == [sample_meta.author]
 
     def test_sets_root_data(self, blank_pdf, sample_meta):
         pdf_xmp_metadata_injection(blank_pdf, sample_meta)
@@ -58,6 +59,13 @@ class TestPdfXmpMetadataInjection:
         with blank_pdf.open_metadata() as xmp:
             assert xmp["dc:subject"] == ""
             assert xmp["pdf:keywords"] == ""
+
+    def test_single_keyword(self, blank_pdf):
+        meta = DocumentMeta(title="T", author="A", keywords=["python"])
+        pdf_xmp_metadata_injection(blank_pdf, meta)
+        with blank_pdf.open_metadata() as xmp:
+            assert xmp["dc:subject"] == "python"
+            assert xmp["pdf:keywords"] == "python"
 
     def test_multiple_keywords_joined_with_comma(self, blank_pdf):
         meta = DocumentMeta(title="T", author="A", keywords=["a", "b", "c"])
@@ -83,7 +91,12 @@ class TestHtmlToPdf:
         html_to_pdf(SIMPLE_HTML, "", output, sample_meta)
         with pikepdf.open(output) as pdf, pdf.open_metadata() as meta:
             assert meta["dc:title"] == sample_meta.title
+            assert meta["dc:language"] == sample_meta.language
+            assert meta["xmpRights:Owner"] == sample_meta.author
+            assert meta["dc:subject"] == "python, engineer"
+            assert meta["pdf:keywords"] == "python, engineer"
             assert meta["xmp:CreatorTool"] == "ResumeGen v1"
+            assert meta["pdfuaid:part"] == "1"
 
     def test_raises_when_weasyprint_returns_none(self, tmp_path, sample_meta):
         output = tmp_path / "resume.pdf"

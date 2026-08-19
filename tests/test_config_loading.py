@@ -7,6 +7,7 @@ from pydantic import ValidationError
 from resumegen import config as resumegen_config
 from resumegen.config import (
     AppConfig,
+    DisplayLink,
     DocumentConfig,
     DocumentMeta,
     EducationEntry,
@@ -73,6 +74,7 @@ class TestPersonalInfo:
         )
         assert p.phone == "555-1234"
         assert p.linkedin == "https://linkedin.com/in/jane"
+        assert p.github == "https://github.com/jane"
 
     def test_missing_name_raises(self):
         with pytest.raises(ValidationError) as exc_info:
@@ -129,8 +131,12 @@ class TestExperienceEntry:
             end_date="2023-06",
             description_bullets=["Built X", "Led Y"],
         )
+        assert e.title == "Engineer"
+        assert e.company == "Acme"
+        assert e.location == "NYC"
+        assert e.start_date == "2020-01"
         assert e.end_date == "2023-06"
-        assert len(e.description_bullets) == 2
+        assert e.description_bullets == ["Built X", "Led Y"]
 
     def test_missing_required_fields_raises(self):
         with pytest.raises(ValidationError):
@@ -155,11 +161,32 @@ class TestProjectEntry:
             description_bullets=["Did X"],
             technologies=["Python", "Docker"],
         )
+        assert p.title == "My Project"
+        assert p.timeframe == "2024"
+        assert p.link.text == "GitHub"
+        assert p.link.url == "https://github.com/jane/proj"
+        assert p.subtitle == "A cool thing"
+        assert p.description_bullets == ["Did X"]
         assert p.technologies == ["Python", "Docker"]
 
     def test_missing_title_raises(self):
         with pytest.raises(ValidationError):
             ProjectEntry(subtitle="No title here")
+
+
+class TestDisplayLink:
+    def test_valid(self):
+        link = DisplayLink(text="GitHub", url="https://github.com/jane")
+        assert link.text == "GitHub"
+        assert link.url == "https://github.com/jane"
+
+    def test_missing_text_raises(self):
+        with pytest.raises(ValidationError):
+            DisplayLink(url="https://github.com/jane")
+
+    def test_missing_url_raises(self):
+        with pytest.raises(ValidationError):
+            DisplayLink(text="GitHub")
 
 
 class TestEducationEntry:
@@ -183,6 +210,9 @@ class TestEducationEntry:
             gpa="3.9",
             honors=["Dean's List", "Phi Beta Kappa"],
         )
+        assert e.completion_date == "2022-05"
+        assert e.description == "Focused on ML"
+        assert e.gpa == "3.9"
         assert e.honors == ["Dean's List", "Phi Beta Kappa"]
 
     def test_missing_required_fields_raises(self):
