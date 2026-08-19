@@ -3,7 +3,7 @@ from pathlib import Path
 import pikepdf
 import pytest
 
-from resumegen.core.config import DocumentMetadata, ResumeData
+from resumegen._core.config import DocumentMetadata, ResumeData
 
 MINIMAL_DATA_YAML = """\
 document_metadata:

@@ -3,7 +3,7 @@ import os
 import dotenv
 import yaml
 
-from resumegen.core.config import (
+from resumegen._core.config import (
     RESUMEGEN_DATA_DIR,
     RESUMEGEN_DEFAULT_CONFIG_PATH,
     Config,

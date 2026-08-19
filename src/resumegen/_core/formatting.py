@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 
-from resumegen.core.config import DocumentMetadata
+from resumegen._core.config import DocumentMetadata
 
 logger = logging.getLogger(__name__)
 

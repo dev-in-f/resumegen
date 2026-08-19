@@ -1,6 +1,6 @@
 import logging
 
-from resumegen.core.logging import setup_logging
+from resumegen._core.logging import setup_logging
 
 
 class TestLogging:

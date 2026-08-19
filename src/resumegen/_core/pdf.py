@@ -6,10 +6,10 @@ import pikepdf
 from pikepdf import Dictionary, String
 from weasyprint import HTML
 
-from resumegen.core.accessibility import AccessibilityReport, scan_accessibility
-from resumegen.core.config import DocumentMetadata, ResumeData
-from resumegen.core.exceptions import PdfError
-from resumegen.core.html_rendering import (
+from resumegen._core.accessibility import AccessibilityReport, scan_accessibility
+from resumegen._core.config import DocumentMetadata, ResumeData
+from resumegen._core.exceptions import PdfError
+from resumegen._core.html_rendering import (
     RenderError,
     _format_output_filename,
     _render_html_from_template,

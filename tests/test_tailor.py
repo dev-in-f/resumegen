@@ -7,7 +7,7 @@ import pytest
 from conftest import MINIMAL_DATA_YAML, MINIMAL_JOB_DESCRIPTION
 from litellm import completion as _litellm_completion
 
-from resumegen.core.tailor import (
+from resumegen._core.tailor import (
     _build_taylor_system_prompt,
     _generate_filename,
     _save_to_file,
@@ -119,7 +119,7 @@ class TestTailorResume:
         self, master_data_file, job_description_file, output_dir
     ):
         with patch(
-            "resumegen.core.tailor.completion",
+            "resumegen._core.tailor.completion",
             side_effect=_mock_completion(MINIMAL_DATA_YAML),
         ):
             result = tailor_resume(
@@ -136,7 +136,7 @@ class TestTailorResume:
         self, master_data_file, job_description_file, output_dir
     ):
         with patch(
-            "resumegen.core.tailor.completion",
+            "resumegen._core.tailor.completion",
             side_effect=_mock_completion(MINIMAL_DATA_YAML),
         ):
             result = tailor_resume(
@@ -151,7 +151,7 @@ class TestTailorResume:
 
     def test_accepts_job_description_as_string(self, master_data_file, output_dir):
         with patch(
-            "resumegen.core.tailor.completion",
+            "resumegen._core.tailor.completion",
             side_effect=_mock_completion("tailored yaml"),
         ):
             result = tailor_resume(
@@ -167,7 +167,7 @@ class TestTailorResume:
         self, master_data_file, job_description_file, output_dir
     ):
         with patch(
-            "resumegen.core.tailor.completion",
+            "resumegen._core.tailor.completion",
             side_effect=_mock_completion("tailored yaml"),
         ):
             result = tailor_resume(
@@ -185,7 +185,7 @@ class TestTailorResume:
         self, master_data_file, job_description_file, output_dir
     ):
         with patch(
-            "resumegen.core.tailor.completion",
+            "resumegen._core.tailor.completion",
             side_effect=_mock_completion("tailored yaml"),
         ):
             result = tailor_resume(
@@ -202,7 +202,7 @@ class TestTailorResume:
     def test_base_url_passed_to_completion(
         self, master_data_file, job_description_file, output_dir
     ):
-        with patch("resumegen.core.tailor.completion") as mock_completion:
+        with patch("resumegen._core.tailor.completion") as mock_completion:
             mock_resp = MagicMock()
             mock_resp.choices[0].message.content = "tailored yaml"
             mock_completion.return_value = mock_resp
@@ -223,7 +223,7 @@ class TestTailorResume:
         mock_resp = MagicMock()
         mock_resp.choices[0].message.content = None
         with (
-            patch("resumegen.core.tailor.completion", return_value=mock_resp),
+            patch("resumegen._core.tailor.completion", return_value=mock_resp),
             pytest.raises(ValueError, match="empty response"),
         ):
             tailor_resume(
@@ -238,7 +238,7 @@ class TestTailorResume:
         self, master_data_file, job_description_file, output_dir
     ):
         with patch(
-            "resumegen.core.tailor.completion",
+            "resumegen._core.tailor.completion",
             side_effect=_mock_completion("tailored yaml"),
         ):
             tailor_resume(
@@ -249,7 +249,7 @@ class TestTailorResume:
                 track_cost=True,
                 save_to_file=False,
             )
-        from resumegen.core.tailor import _track_cost
+        from resumegen._core.tailor import _track_cost
 
         assert _track_cost in litellm.success_callback
 
@@ -257,7 +257,7 @@ class TestTailorResume:
         self, master_data_file, job_description_file, output_dir
     ):
         with patch(
-            "resumegen.core.tailor.completion",
+            "resumegen._core.tailor.completion",
             side_effect=_mock_completion("tailored yaml"),
         ):
             tailor_resume(
@@ -275,7 +275,7 @@ class TestTailorResume:
     ):
         with (
             patch(
-                "resumegen.core.tailor.completion",
+                "resumegen._core.tailor.completion",
                 side_effect=RuntimeError("api error"),
             ),
             pytest.raises(RuntimeError, match="api error"),

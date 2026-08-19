@@ -1,7 +1,7 @@
 import pytest
 
-from resumegen.core.config import DocumentMetadata
-from resumegen.core.formatting import _format_output_filename, _sanitize_metadata
+from resumegen._core.config import DocumentMetadata
+from resumegen._core.formatting import _format_output_filename, _sanitize_metadata
 
 
 class TestSanitizeMetadata:

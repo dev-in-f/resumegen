@@ -7,18 +7,18 @@ import litellm
 from pydantic import ValidationError
 
 from resumegen._bootstrap import bootstrap
-from resumegen.core.config import (
+from resumegen._core.config import (
     RESUMEGEN_DEFAULT_CONFIG_PATH,
     Config,
     DocumentMetadata,
     ResumeData,
     load_yaml_to_data_model,
 )
-from resumegen.core.exceptions import PdfError, RenderError
-from resumegen.core.html_rendering import render_html
-from resumegen.core.logging import color_message, setup_logging
-from resumegen.core.pdf import render_pdf
-from resumegen.core.tailor import tailor_resume
+from resumegen._core.exceptions import PdfError, RenderError
+from resumegen._core.html_rendering import render_html
+from resumegen._core.logging import color_message, setup_logging
+from resumegen._core.pdf import render_pdf
+from resumegen._core.tailor import tailor_resume
 
 bootstrap()
 logger = logging.getLogger(__name__)

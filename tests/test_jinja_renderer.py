@@ -4,10 +4,10 @@ from pathlib import Path
 import pytest
 from freezegun import freeze_time
 
-from resumegen.core.config import Config
-from resumegen.core.exceptions import RenderError
-from resumegen.core.formatting import _format_output_filename
-from resumegen.core.html_rendering import (
+from resumegen._core.config import Config
+from resumegen._core.exceptions import RenderError
+from resumegen._core.formatting import _format_output_filename
+from resumegen._core.html_rendering import (
     _render_html_from_template,
     render_html,
 )

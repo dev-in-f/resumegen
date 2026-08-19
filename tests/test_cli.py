@@ -6,8 +6,8 @@ import pydantic
 import pytest
 from click.testing import CliRunner
 
+from resumegen._core.exceptions import PdfError, RenderError
 from resumegen.cli import _override_logging_options, app
-from resumegen.core.exceptions import PdfError, RenderError
 
 runner = CliRunner()
 
