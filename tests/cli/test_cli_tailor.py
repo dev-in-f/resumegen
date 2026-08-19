@@ -19,7 +19,7 @@ class TestTailorCommand:
         config_file,
         output_dir,
     ):
-        mock_tailor.return_value = output_dir / "tailored.yaml"
+        mock_tailor.return_value = ("raw yaml content", output_dir / "tailored.yaml")
         result = runner.invoke(
             app,
             [
@@ -46,7 +46,7 @@ class TestTailorCommand:
         config_file,
         output_dir,
     ):
-        mock_tailor.return_value = output_dir / "tailored.yaml"
+        mock_tailor.return_value = ("raw yaml content", output_dir / "tailored.yaml")
         result = runner.invoke(
             app,
             [
@@ -76,7 +76,7 @@ class TestTailorCommand:
         config_file,
         output_dir,
     ):
-        mock_tailor.return_value = "raw yaml content"
+        mock_tailor.return_value = ("raw yaml content", None)
         result = runner.invoke(
             app,
             [
@@ -105,7 +105,7 @@ class TestTailorCommand:
         config_file,
         output_dir,
     ):
-        mock_tailor.return_value = output_dir / "tailored.yaml"
+        mock_tailor.return_value = ("raw yaml content", output_dir / "tailored.yaml")
         result = runner.invoke(
             app,
             [
@@ -135,7 +135,7 @@ class TestTailorCommand:
         config_file,
         output_dir,
     ):
-        mock_tailor.return_value = output_dir / "tailored.yaml"
+        mock_tailor.return_value = ("raw yaml content", output_dir / "tailored.yaml")
         result = runner.invoke(
             app,
             [
@@ -157,6 +157,99 @@ class TestTailorCommand:
         assert call_args[8] == "custom_{date}.yaml"
 
     @patch("resumegen._cli.tailor.tailor_resume")
+    def test_output_template_with_dir_overrides_output_dir(
+        self,
+        mock_tailor,
+        master_data_file,
+        job_description_file,
+        config_file,
+        output_dir,
+        tmp_path,
+    ):
+        mock_tailor.return_value = ("raw yaml content", output_dir / "tailored.yaml")
+        embedded_dir = tmp_path / "embedded" / "sub"
+        result = runner.invoke(
+            app,
+            [
+                "tailor",
+                str(master_data_file),
+                str(job_description_file),
+                "--config",
+                str(config_file),
+                "--output-dir",
+                str(output_dir),
+                "--model",
+                "gpt-4o",
+                "--output-template",
+                str(embedded_dir / "custom_{date}.yaml"),
+            ],
+        )
+        assert result.exit_code == 0
+        call_args = mock_tailor.call_args.args
+        assert call_args[2] == embedded_dir
+        assert call_args[8] == "custom_{date}.yaml"
+
+    @patch("resumegen._cli.tailor.tailor_resume")
+    def test_no_interactive_save_prints_content_and_saves(
+        self,
+        mock_tailor,
+        master_data_file,
+        job_description_file,
+        config_file,
+        output_dir,
+    ):
+        mock_tailor.return_value = ("raw yaml content", output_dir / "tailored.yaml")
+        result = runner.invoke(
+            app,
+            [
+                "tailor",
+                str(master_data_file),
+                str(job_description_file),
+                "--config",
+                str(config_file),
+                "--output-dir",
+                str(output_dir),
+                "--model",
+                "gpt-4o",
+                "--no-interactive",
+                "--save",
+            ],
+        )
+        assert result.exit_code == 0
+        assert mock_tailor.call_args.args[7] is True  # save_to_file
+        assert result.output.strip() == "raw yaml content"
+
+    @patch("resumegen._cli.tailor.tailor_resume")
+    def test_no_interactive_no_save_prints_content_only(
+        self,
+        mock_tailor,
+        master_data_file,
+        job_description_file,
+        config_file,
+        output_dir,
+    ):
+        mock_tailor.return_value = ("raw yaml content", None)
+        result = runner.invoke(
+            app,
+            [
+                "tailor",
+                str(master_data_file),
+                str(job_description_file),
+                "--config",
+                str(config_file),
+                "--output-dir",
+                str(output_dir),
+                "--model",
+                "gpt-4o",
+                "--no-interactive",
+                "--no-save",
+            ],
+        )
+        assert result.exit_code == 0
+        assert mock_tailor.call_args.args[7] is False  # save_to_file
+        assert result.output.strip() == "raw yaml content"
+
+    @patch("resumegen._cli.tailor.tailor_resume")
     def test_base_url_forwarded(
         self,
         mock_tailor,
@@ -165,7 +258,7 @@ class TestTailorCommand:
         config_file,
         output_dir,
     ):
-        mock_tailor.return_value = output_dir / "tailored.yaml"
+        mock_tailor.return_value = ("raw yaml content", output_dir / "tailored.yaml")
         result = runner.invoke(
             app,
             [
@@ -218,7 +311,7 @@ class TestTailorCommand:
     ):
         config = tmp_path / "config_with_model.yaml"
         config.write_text("model: gpt-3.5-turbo\n")
-        mock_tailor.return_value = output_dir / "tailored.yaml"
+        mock_tailor.return_value = ("raw yaml content", output_dir / "tailored.yaml")
         result = runner.invoke(
             app,
             [

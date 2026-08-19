@@ -52,6 +52,7 @@ def render_pdf(
         raise FileExistsError(
             f"Output file {output_path} already exists and overwrite is disabled."
         )
+    output_dir.mkdir(parents=True, exist_ok=True)
     pdf = _html_to_pdf(
         html_content,
         template_dir,
@@ -82,6 +83,7 @@ def render_pdf_from_html(
         raise FileExistsError(
             f"Output file {output_path} already exists and overwrite is disabled."
         )
+    output_dir.mkdir(parents=True, exist_ok=True)
     pdf.save(output_path)
     return output_path
 

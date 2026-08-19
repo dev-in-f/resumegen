@@ -108,7 +108,7 @@ def tailor_resume(
     save_to_file: bool = True,
     output_filename: str | None = None,
     overwrite_existing: bool = False,
-) -> str | Path:
+) -> tuple[str, Path | None]:
     if model == "":
         raise ValueError(
             "Model parameter is not set. "
@@ -143,20 +143,21 @@ def tailor_resume(
     response_text = response.choices[0].message.content  # type: ignore
     if not response_text:
         raise ValueError("Received empty response.")
-    if output_filename or save_to_file:
+    if save_to_file:
         template_context = {
             "job_title": job_title,
             "job_description_text": job_description_text,
             "model": model,
         }
-        return _save_to_file(
+        output_path = _save_to_file(
             output_dir,
             output_filename,
             response_text,
             template_context,
             overwrite_existing,
         )
-    return response_text
+        return response_text, output_path
+    return response_text, None
 
 
 def score_master_data():

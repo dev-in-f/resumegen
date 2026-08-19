@@ -122,15 +122,16 @@ class TestTailorResume:
             "resumegen._core.tailor.completion",
             side_effect=_mock_completion(MINIMAL_DATA_YAML),
         ):
-            result = tailor_resume(
+            content, output_path = tailor_resume(
                 master_data_file,
                 job_description_file,
                 output_dir,
                 "gpt-4o",
                 save_to_file=True,
             )
-        assert isinstance(result, Path)
-        assert result.exists()
+        assert content == MINIMAL_DATA_YAML
+        assert isinstance(output_path, Path)
+        assert output_path.exists()
 
     def test_returns_string_when_not_save_to_file(
         self, master_data_file, job_description_file, output_dir
@@ -139,29 +140,31 @@ class TestTailorResume:
             "resumegen._core.tailor.completion",
             side_effect=_mock_completion(MINIMAL_DATA_YAML),
         ):
-            result = tailor_resume(
+            content, output_path = tailor_resume(
                 master_data_file,
                 job_description_file,
                 output_dir,
                 "gpt-4o",
                 save_to_file=False,
             )
-        assert isinstance(result, str)
-        assert result == MINIMAL_DATA_YAML
+        assert output_path is None
+        assert isinstance(content, str)
+        assert content == MINIMAL_DATA_YAML
 
     def test_accepts_job_description_as_string(self, master_data_file, output_dir):
         with patch(
             "resumegen._core.tailor.completion",
             side_effect=_mock_completion("tailored yaml"),
         ):
-            result = tailor_resume(
+            content, output_path = tailor_resume(
                 master_data_file,
                 MINIMAL_JOB_DESCRIPTION,
                 output_dir,
                 "gpt-4o",
                 save_to_file=False,
             )
-        assert result == "tailored yaml"
+        assert output_path is None
+        assert content == "tailored yaml"
 
     def test_job_title_used_in_filename(
         self, master_data_file, job_description_file, output_dir
@@ -170,7 +173,7 @@ class TestTailorResume:
             "resumegen._core.tailor.completion",
             side_effect=_mock_completion("tailored yaml"),
         ):
-            result = tailor_resume(
+            _, output_path = tailor_resume(
                 master_data_file,
                 job_description_file,
                 output_dir,
@@ -178,8 +181,26 @@ class TestTailorResume:
                 save_to_file=True,
                 job_title="Senior_Dev",
             )
-        assert isinstance(result, Path)
-        assert "senior_dev" in result.name
+        assert isinstance(output_path, Path)
+        assert "senior_dev" in output_path.name
+
+    def test_output_filename_only_used_when_save_to_file(
+        self, master_data_file, job_description_file, output_dir
+    ):
+        with patch(
+            "resumegen._core.tailor.completion",
+            side_effect=_mock_completion("tailored yaml"),
+        ):
+            content, output_path = tailor_resume(
+                master_data_file,
+                job_description_file,
+                output_dir,
+                "gpt-4o",
+                save_to_file=False,
+                output_filename="custom_{model}.yaml",
+            )
+        assert output_path is None
+        assert content == "tailored yaml"
 
     def test_output_filename_overrides_default(
         self, master_data_file, job_description_file, output_dir
@@ -188,16 +209,16 @@ class TestTailorResume:
             "resumegen._core.tailor.completion",
             side_effect=_mock_completion("tailored yaml"),
         ):
-            result = tailor_resume(
+            _, output_path = tailor_resume(
                 master_data_file,
                 job_description_file,
                 output_dir,
                 "gpt-4o",
-                save_to_file=False,
+                save_to_file=True,
                 output_filename="custom_{model}.yaml",
             )
-        assert isinstance(result, Path)
-        assert "gpt-4o" in result.name
+        assert isinstance(output_path, Path)
+        assert "gpt-4o" in output_path.name
 
     def test_base_url_passed_to_completion(
         self, master_data_file, job_description_file, output_dir

@@ -32,7 +32,7 @@ class TestRenderCommand:
     def test_renders_html_when_flag_set(
         self, mock_html, data_file, config_file, output_dir
     ):
-        mock_html.return_value = output_dir / "resume.html"
+        mock_html.return_value = ("<html></html>", output_dir / "resume.html")
         result = runner.invoke(
             app,
             [
@@ -42,7 +42,7 @@ class TestRenderCommand:
                 str(config_file),
                 "--output-dir",
                 str(output_dir),
-                "--html",
+                "--html-only",
             ],
         )
         assert result.exit_code == 0
@@ -235,13 +235,127 @@ class TestRenderCommand:
                 str(config_file),
                 "--output-dir",
                 str(output_dir),
-                "--output",
+                "--output-template",
                 "my_{author}.pdf",
             ],
         )
         assert result.exit_code == 0
         call_args = mock_render.call_args.args
         assert call_args[2] == "my_{author}.pdf"
+
+    @patch("resumegen._cli.render.render_pdf")
+    def test_output_template_with_dir_overrides_output_dir(
+        self, mock_render, data_file, config_file, output_dir, tmp_path
+    ):
+        mock_render.return_value = (output_dir / "resume.pdf", None)
+        embedded_dir = tmp_path / "embedded" / "sub"
+        result = runner.invoke(
+            app,
+            [
+                "render",
+                str(data_file),
+                "--config",
+                str(config_file),
+                "--output-dir",
+                str(output_dir),
+                "--output-template",
+                str(embedded_dir / "my_{author}.pdf"),
+            ],
+        )
+        assert result.exit_code == 0
+        call_args = mock_render.call_args.args
+        assert call_args[1] == embedded_dir
+        assert call_args[2] == "my_{author}.pdf"
+
+    @patch("resumegen._cli.render.render_html")
+    def test_html_only_no_interactive_save_prints_content_and_saves(
+        self, mock_html, data_file, config_file, output_dir
+    ):
+        saved_path = output_dir / "resume.html"
+        mock_html.return_value = ("<html>hi</html>", saved_path)
+        result = runner.invoke(
+            app,
+            [
+                "render",
+                str(data_file),
+                "--config",
+                str(config_file),
+                "--output-dir",
+                str(output_dir),
+                "--html-only",
+                "--no-interactive",
+                "--save",
+            ],
+        )
+        assert result.exit_code == 0
+        assert mock_html.call_args.args[5] is True  # save_to_file
+        assert result.output.strip() == "<html>hi</html>"
+
+    @patch("resumegen._cli.render.render_html")
+    def test_html_only_no_interactive_no_save_prints_content_only(
+        self, mock_html, data_file, config_file, output_dir
+    ):
+        mock_html.return_value = ("<html>hi</html>", None)
+        result = runner.invoke(
+            app,
+            [
+                "render",
+                str(data_file),
+                "--config",
+                str(config_file),
+                "--output-dir",
+                str(output_dir),
+                "--html-only",
+                "--no-interactive",
+                "--no-save",
+            ],
+        )
+        assert result.exit_code == 0
+        assert mock_html.call_args.args[5] is False  # save_to_file
+        assert result.output.strip() == "<html>hi</html>"
+
+    @patch("resumegen._cli.render.render_html")
+    def test_html_only_interactive_no_save_prints_decorated_content(
+        self, mock_html, data_file, config_file, output_dir
+    ):
+        mock_html.return_value = ("<html>hi</html>", None)
+        result = runner.invoke(
+            app,
+            [
+                "render",
+                str(data_file),
+                "--config",
+                str(config_file),
+                "--output-dir",
+                str(output_dir),
+                "--html-only",
+                "--no-save",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "<html>hi</html>" in result.output
+        assert "Rendered HTML" in result.output
+
+    @patch("resumegen._cli.render.render_pdf")
+    def test_pdf_no_interactive_prints_bare_path(
+        self, mock_render, data_file, config_file, output_dir
+    ):
+        output_path = output_dir / "resume.pdf"
+        mock_render.return_value = (output_path, None)
+        result = runner.invoke(
+            app,
+            [
+                "render",
+                str(data_file),
+                "--config",
+                str(config_file),
+                "--output-dir",
+                str(output_dir),
+                "--no-interactive",
+            ],
+        )
+        assert result.exit_code == 0
+        assert result.output.strip() == str(output_path.resolve())
 
     def test_validation_error_exits_with_code_1(self, tmp_path, config_file):
         bad_data = tmp_path / "bad_data.yaml"

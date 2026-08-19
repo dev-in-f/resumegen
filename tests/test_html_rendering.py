@@ -27,7 +27,9 @@ class TestHTMLRendering:
         filename = _format_output_filename(
             self.config.output_filename, minimal_document_metadata
         )
-        expected_date = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        expected_date = datetime.now(datetime.now().astimezone().tzinfo).strftime(
+            "%Y-%m-%d_%H-%M-%S"
+        )
         assert filename == f"jane_doe_resume_{expected_date}.pdf"
 
     @freeze_time("2026-01-01")
@@ -56,16 +58,18 @@ class TestHTMLRendering:
             )
 
     def test_output_html(self, minimal_resume_data, tmp_path):
-        output_path = render_html(
+        html_content, output_path = render_html(
             minimal_resume_data,
             self.config.output_dir,
             self.config.output_filename,
             self.config.template_name,
             self.config.template_dir,
         )
+        assert output_path is not None
         assert Path(output_path).exists()
         assert Path(output_path).suffix == ".html"
         Path(output_path).relative_to(tmp_path)
+        assert "Jane Doe" in html_content
         with Path(output_path).open() as f:
             content = f.read()
             assert "Jane Doe" in content
@@ -74,7 +78,7 @@ class TestHTMLRendering:
             assert "</div>" in content
 
     def test_render_html_no_save_returns_content(self, minimal_resume_data):
-        html_content = render_html(
+        html_content, output_path = render_html(
             minimal_resume_data,
             self.config.output_dir,
             self.config.output_filename,
@@ -82,7 +86,21 @@ class TestHTMLRendering:
             self.config.template_dir,
             save_to_file=False,
         )
+        assert output_path is None
         assert "Jane Doe" in html_content
         assert "Acme Co." in html_content
         assert "Python" in html_content
         assert "</div>" in html_content
+
+    def test_output_html_creates_missing_dir(self, minimal_resume_data, tmp_path):
+        missing_dir = tmp_path / "does" / "not" / "exist"
+        _, output_path = render_html(
+            minimal_resume_data,
+            missing_dir,
+            self.config.output_filename,
+            self.config.template_name,
+            self.config.template_dir,
+        )
+        assert output_path is not None
+        assert output_path.exists()
+        assert output_path.parent == missing_dir

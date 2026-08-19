@@ -38,9 +38,8 @@ def render_html(
     template_dir: Path,
     save_to_file: bool = True,
     override_existing: bool = False,
-) -> Path | str:
-    """Renders the given ResumeData into HTML
-    and saves it to the specified output directory or returns the content.
+) -> tuple[str, Path | None]:
+    """Renders the given ResumeData into HTML, optionally saving it to disk.
 
     Arguments:
         resume_data: ResumeData object containing the data to render.
@@ -48,17 +47,17 @@ def render_html(
         filename_template: Template for the output filename.
         template_name: Name of the Jinja2 template file.
         template_dir: Path to the directory containing Jinja2 templates.
-        save_to_file: If True, saves the rendered HTML to a file;
-        otherwise, returns the HTML content.
+        save_to_file: If True, also saves the rendered HTML to a file.
         override_existing: If True, overrides existing files with the same name.
 
     Returns:
-        Path to the saved HTML file or the HTML content.
+        A tuple of the rendered HTML content and the path it was saved to
+        (or None if save_to_file is False).
 
     """
     html_content = _render_html_from_template(template_dir, template_name, resume_data)
     if not save_to_file:
-        return html_content
+        return html_content, None
     output_filename = _format_output_filename(
         filename_template, resume_data.document_metadata
     )
@@ -66,7 +65,8 @@ def render_html(
     output_path = output_path.with_suffix(".html")
     if output_path.exists() and not override_existing:
         raise FileExistsError(f"File already exists: {output_path}")
+    output_dir.mkdir(parents=True, exist_ok=True)
     with output_path.open("w") as f:
         f.write(html_content)
     logger.debug("Saved HTML content to: %s", output_path)
-    return output_path
+    return html_content, output_path

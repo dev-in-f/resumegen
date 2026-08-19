@@ -90,3 +90,36 @@ def _load_yaml_to_data_model[T: BaseModel](file_path: Path, model: type[T]) -> T
     with file_path.open() as f:
         data = yaml.safe_load(f)
         return model.model_validate(data)
+
+
+def _split_output_path(
+    output_value: str | None, output_dir: Path | None
+) -> tuple[Path | None, str | None]:
+    """Split output option into directory portion and
+    filename portion if that's the input format."""
+    if output_value:
+        path = Path(output_value)
+        if path.parent != Path():
+            return path.parent, path.name
+        return output_dir, output_value
+    return output_dir, output_value
+
+
+def interactive_options(f) -> click.Command:
+    f = click.option(
+        "--save/--no-save",
+        "save_to_file",
+        is_flag=True,
+        default=True,
+        help="Write the rendered output to a file. Independent of --interactive: "
+        "combine with --no-interactive to both save and print to stdout.",
+    )(f)
+    return click.option(
+        "--interactive/--no-interactive",
+        "interactive",
+        is_flag=True,
+        default=True,
+        help="Print decorated status messages. With --no-interactive, the raw "
+        "rendered content is printed to stdout instead (in addition to being "
+        "saved, unless --no-save is also given), for use in scripts/pipelines.",
+    )(f)
