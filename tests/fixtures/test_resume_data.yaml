@@ -17,9 +17,15 @@ resume_data:
 
   skill_sections:
     - title: "Languages"
-      skills: "Python, JavaScript, TypeScript"
+      skills:
+        - "Python"
+        - "JavaScript"
+        - "TypeScript"
     - title: "Frameworks"
-      skills: "React, Django, FastAPI"
+      skills:
+        - "React"
+        - "Django"
+        - "FastAPI"
 
   experience:
     - title: "Senior Software Engineer"
