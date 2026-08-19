@@ -46,7 +46,8 @@ def _build_taylor_system_prompt() -> str:
       if they are asked for
 
     The output must be valid YAML that conforms to the included resume JSON schema.
-    Do not wrap the YAML with a code block or fencing. Just return the raw YAML text."""
+    Do not wrap the YAML with a code block or fencing. Do not include backticks.
+    Just return the raw YAML text."""
 
 
 def _generate_filename(
