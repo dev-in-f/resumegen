@@ -1,6 +1,6 @@
 [project]
 name = "resumegen"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Add your description here"
 readme = "README.md"
 authors = [{ name = "dev-in-f" }]
@@ -11,6 +11,7 @@ dependencies = [
     "jinja2",
     "mcp>=1.27.2",
     "pikepdf",
+    "platformdirs>=4.10.0",
     "pydantic",
     "pyyaml",
     "typer>=0.26.7",
@@ -21,16 +22,24 @@ dependencies = [
 resumegen = "resumegen:main"
 
 [build-system]
-requires = ["uv_build>=0.10.2,<0.12.0"]
-build-backend = "uv_build"
+requires = ["hatchling", "uv-dynamic-versioning"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "uv-dynamic-versioning"
+
+[tool.uv-dynamic-versioning]
+fallback-version = "1.0.0"
 
 [dependency-groups]
 dev = [
     "commitizen",
     "freezegun>=1.5.5",
+    "hatchling>=1.30.1",
     "prek>=0.4.4",
     "pytest",
     "pytest-cov",
+    "uv-dynamic-versioning>=0.14.0",
 ]
 
 [tool.ruff.lint]
