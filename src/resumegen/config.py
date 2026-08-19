@@ -159,6 +159,8 @@ class Config(BaseModel):
         validate_default=True,
     )
     template_name: str = "template.html.j2"
+    model: str = ""
+    base_url: str = ""
 
     @field_validator("template_dir")
     @classmethod

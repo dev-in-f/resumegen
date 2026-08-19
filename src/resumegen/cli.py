@@ -13,6 +13,9 @@ from resumegen.config import (
 )
 from resumegen.pdf import render_pdf
 from resumegen.renderer import output_html
+from resumegen.tailor import score_master_data, tailor_resume
+
+
 def common_options(f) -> click.Command:
     f = click.option(
         "--log-level",
@@ -65,7 +68,7 @@ def setup_logging(level: str, log_file: Path | None = None) -> None:
 @common_options
 @click.argument(
     "data_file",
-    type=click.File("r"),
+    type=click.Path(path_type=Path, dir_okay=False, exists=True),
     default="-",
 )
 @click.option(
@@ -173,6 +176,120 @@ def render(
         logging.exception(f"Failed to generate resume: {e}")
         raise click.exceptions.Exit(code=1) from e
 
-app = click.Group(commands={"render": render})
+
+@click.command()
+@common_options
+@click.argument(
+    "master_data_file",
+    type=click.Path(path_type=Path, dir_okay=False, exists=True),
+)
+@click.argument(
+    "job_description_file",
+    type=click.Path(path_type=Path, dir_okay=False, exists=True),
+)
+@click.option(
+    "--model",
+    type=str,
+    help="Language model to use for tailoring the resume. "
+    "Required to be set via an environment variable, "
+    "in the config file, or as a command-line option.",
+    envvar="RESUMEGEN_MODEL",
+)
+@click.option(
+    "--base-url",
+    type=str,
+    help="Base URL for the language model API. "
+    "Required for generic models. "
+    "Check the litellm documentation for details on how to set this up.",
+    envvar="RESUMEGEN_BASE_URL",
+)
+@click.option(
+    "-s",
+    "--score",
+    is_flag=True,
+    default=False,
+    help="Score how relevant the data from the master "
+    "data file is to the job description. ",
+)
+@click.option(
+    "--track-cost",
+    is_flag=True,
+    default=False,
+    help="Track the cost of API calls to the language model. ",
+)
+@click.option(
+    "--job-title",
+    type=str,
+    help="Job title used in the output filename."
+    " If not provided, the first line of the job description will be used.",
+)
+@click.option(
+    "--no-save/--save",
+    "save_to_file",
+    is_flag=True,
+    default=True,
+    help="Save the tailored data to a file. "
+    "If not set, the tailored data will be returned as a string.",
+)
+@click.option(
+    "--output",
+    "-o",
+    "output_filename",
+    type=str,
+    help="Override the default output filename. "
+    "Setting this will override the '--save' option. "
+    "Setting this will ignore the job title and "
+    "job description for filename generation."
+    "The filename can use the placeholders {date}, {job_title}, "
+    "{model}, and {first_line} for dynamic content. "
+    "For example: 'tailored_resume_{job_title}_{date}.yaml'.",
+)
+def tailor(
+    master_data_file: Path,
+    job_description_file: Path,
+    job_title: str | None,
+    model: str | None,
+    base_url: str | None,
+    score: bool,
+    track_cost: bool,
+    save_to_file: bool,
+    log_level: str | None,
+    log_file: Path | None,
+    output_dir: Path | None,
+    config_path: Path,
+    output_filename: str | None = None,
+) -> str | Path:
+    try:
+        env_log_file = os.getenv("RESUMEGEN_LOG_FILE")
+        log_file_from_env = Path(env_log_file) if env_log_file else None
+        setup_logging(
+            log_level or os.getenv("RESUMEGEN_LOG_LEVEL", "INFO"),
+            log_file or log_file_from_env if log_file_from_env else None,
+        )
+        app_config = load_yaml_to_data_model(config_path, Config)
+        logging.debug("Configuration loaded successfully.")
+        tailor_model = model or app_config.model or os.getenv("RESUMEGEN_MODEL", "")
+        if score:
+            logging.info("Scoring master data against job description...")
+            score_master_data()
+        return tailor_resume(
+            master_data_file,
+            job_description_file,
+            output_dir or app_config.output_dir,
+            tailor_model,
+            track_cost,
+            save_to_file,
+            job_title,
+            base_url or app_config.base_url,
+            output_filename,
+        )
+
+    except Exception as e:
+        logging.exception(f"Tailoring failed with the following error: {e}")
+        raise click.exceptions.Exit(code=1) from e
+
+
+app = click.Group(commands={"render": render, "tailor": tailor})
+
 if __name__ == "__main__":  # pragma no cover
     app()

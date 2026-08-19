@@ -98,6 +98,7 @@ class TestMainCommand:
         result = runner.invoke(
             app,
             [
+                "render",
                 str(data_file),
                 "--config",
                 str(config_file),
@@ -116,6 +117,7 @@ class TestMainCommand:
         result = runner.invoke(
             app,
             [
+                "render",
                 str(data_file),
                 "--config",
                 str(config_file),
@@ -135,6 +137,7 @@ class TestMainCommand:
         result = runner.invoke(
             app,
             [
+                "render",
                 str(data_file),
                 "--config",
                 str(config_file),
@@ -152,6 +155,7 @@ class TestMainCommand:
         result = runner.invoke(
             app,
             [
+                "render",
                 str(data_file),
                 "--config",
                 str(config_file),
@@ -178,6 +182,7 @@ class TestMainCommand:
         result = runner.invoke(
             app,
             [
+                "render",
                 str(data_file),
                 "--config",
                 str(config_file),
@@ -197,6 +202,7 @@ class TestMainCommand:
         result = runner.invoke(
             app,
             [
+                "render",
                 str(data_file),
                 "--config",
                 str(config_file),
@@ -222,6 +228,7 @@ class TestMainCommand:
         result = runner.invoke(
             app,
             [
+                "render",
                 str(data_file),
                 "--config",
                 str(config_file),
@@ -229,7 +236,7 @@ class TestMainCommand:
                 str(output_dir),
                 "--template-dir",
                 str(template_dir),
-                "--template",
+                "--template-name",
                 "custom.html.j2",
             ],
         )
@@ -247,6 +254,7 @@ class TestMainCommand:
         result = runner.invoke(
             app,
             [
+                "render",
                 str(data_file),
                 "--config",
                 str(config_file),
@@ -265,6 +273,7 @@ class TestMainCommand:
         result = runner.invoke(
             app,
             [
+                "render",
                 str(data_file),
                 "--config",
                 str(config_file),
@@ -281,7 +290,14 @@ class TestMainCommand:
         bad.write_text("not_a_valid_field: true\n")
         result = runner.invoke(
             app,
-            [str(bad), "--config", str(config_file), "--output-dir", str(output_dir)],
+            [
+                "render",
+                str(bad),
+                "--config",
+                str(config_file),
+                "--output-dir",
+                str(output_dir),
+            ],
         )
         assert result.exit_code == 1
 
@@ -293,6 +309,7 @@ class TestMainCommand:
         result = runner.invoke(
             app,
             [
+                "render",
                 str(data_file),
                 "--config",
                 str(config_file),
@@ -313,6 +330,7 @@ class TestMainCommand:
         result = runner.invoke(
             app,
             [
+                "render",
                 str(data_file),
                 "--config",
                 str(config_file),
