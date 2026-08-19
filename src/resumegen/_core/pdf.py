@@ -18,23 +18,6 @@ from resumegen._core.html_rendering import (
 logger = logging.getLogger(__name__)
 
 
-def _html_to_pdf(
-    html_content: str,
-    base_url: Path,
-) -> pikepdf.Pdf:
-    """Converts HTML content to a PDF using WeasyPrint and returns
-    a pikepdf.Pdf object for further manipulation.
-    """
-    try:
-        document = HTML(string=html_content, base_url=base_url).render()
-        pdf_bytes = document.write_pdf(pdf_tags=True, custom_metadata=True)
-    except Exception as e:
-        raise RenderError(f"Failed to convert HTML into PDF: {e}") from e
-    if pdf_bytes is None:
-        raise RenderError("PDF bytes are None.")
-    return pikepdf.Pdf.open(BytesIO(pdf_bytes))
-
-
 def render_pdf(
     resume_data: ResumeData,
     output_dir: Path,
@@ -80,6 +63,44 @@ def render_pdf(
         return output_path, report
     pdf.save(output_path)
     return output_path, None
+
+
+def render_pdf_from_html(
+    html_file: Path,
+    base_url: Path,
+    output_dir: Path,
+    output_filename: str | None,
+    overwrite_existing: bool = False,
+) -> Path:
+    with html_file.open() as f:
+        html_content = f.read()
+    pdf = _html_to_pdf(html_content, base_url)
+    if output_filename is None:
+        output_filename = html_file.stem + ".pdf"
+    output_path = output_dir / output_filename
+    if output_path.exists() and not overwrite_existing:
+        raise FileExistsError(
+            f"Output file {output_path} already exists and overwrite is disabled."
+        )
+    pdf.save(output_path)
+    return output_path
+
+
+def _html_to_pdf(
+    html_content: str,
+    base_url: Path,
+) -> pikepdf.Pdf:
+    """Converts HTML content to a PDF using WeasyPrint and returns
+    a pikepdf.Pdf object for further manipulation.
+    """
+    try:
+        document = HTML(string=html_content, base_url=base_url).render()
+        pdf_bytes = document.write_pdf(pdf_tags=True, custom_metadata=True)
+    except Exception as e:
+        raise RenderError(f"Failed to convert HTML into PDF: {e}") from e
+    if pdf_bytes is None:
+        raise RenderError("PDF bytes are None.")
+    return pikepdf.Pdf.open(BytesIO(pdf_bytes))
 
 
 def _pdf_xmp_metadata_injection(
