@@ -71,14 +71,20 @@ class ResumeData(BaseModel):
 
 class DocumentConfig(BaseModel):
     meta: DocumentMeta
-    template: Path
+    template_dir: Path
 
-    @field_validator("template")
+    @field_validator("template_dir")
     @classmethod
     def template_must_exist(cls, v: Path) -> str:
         path = Path(v)
         if not path.exists():
-            raise ValueError(f"Template file does not exist: {v}")
+            raise ValueError(f"Template directory does not exist: {v}")
+        if not path.is_dir():
+            raise ValueError(f"Template path is not a directory: {v}")
+        if not (path / "template.html.j2").exists():
+            raise ValueError(
+                f"Template directory must contain a template.html.j2 file: {v}"
+            )
         return str(path.resolve())
 
     resume: ResumeData
