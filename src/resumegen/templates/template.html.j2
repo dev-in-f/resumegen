@@ -38,9 +38,12 @@
         </div>
         {% endif %}
     </header>
+    {% if resume_data.statement %}
     <section id="statement">
         <p>{{ resume_data.statement }}</p>
     </section>
+    {% endif %}
+    {% if resume_data.skill_sections %}
     <section id="skills">
         <h2>Technical Skills</h2>
         <div class="skills-entries">
@@ -52,7 +55,9 @@
             {% endfor %}
         </div>
     </section>
+    {% endif %}
     <br>
+    {% if resume_data.experience %}
     <section id="experience">
         <h2>Work Experience</h2>
         {% for entry in resume_data.experience %}
@@ -76,7 +81,9 @@
         </div>
         {% endfor %}
     </section>
+    {% endif %}
     <br>
+    {% if resume_data.projects %}
     <section id="projects">
         <h2>Projects</h2>
         {% for project in resume_data.projects %}
@@ -108,7 +115,9 @@
         </div>
         {% endfor %}
     </section>
+    {% endif %}
     <br>
+    {% if resume_data.education %}
     <section id="education">
         <h2>Education</h2>
         {% for education in resume_data.education %}
@@ -126,6 +135,8 @@
             {% endif %}
         </div>
         {% endfor %}
+    </section>
+    {% endif %}
 </body>
 
 </html>
