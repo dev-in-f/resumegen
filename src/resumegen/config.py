@@ -141,6 +141,14 @@ class OutputConfig(BaseModel):
         return path.resolve()
 
     output_filename: str = "{author}_resume_{date}.pdf"
+
+    @field_validator("output_filename")
+    @classmethod
+    def validate_output_filename(cls, v):
+        if Path(v).suffix != ".pdf":
+            raise ValueError("Output filename must have a .pdf extension")
+        return v
+
     overwrite: bool = False
 
 

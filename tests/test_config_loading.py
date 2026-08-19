@@ -393,6 +393,14 @@ class TestOutputConfig:
         assert output_dir.is_dir()
         assert c.output_dir == output_dir.resolve()
 
+    def test_valid_custom_output_filename(self):
+        c = OutputConfig(output_filename="resume.pdf")
+        assert c.output_filename == "resume.pdf"
+
+    def test_non_pdf_output_filename_raises(self):
+        with pytest.raises(ValidationError):
+            OutputConfig(output_filename="resume.txt")
+
 
 class TestAppConfig:
     def test_valid_minimal(self):
