@@ -13,29 +13,30 @@ from resumegen._core.config import (
     ResumeData,
     SkillsSubsection,
 )
-from resumegen._core.exceptions import PdfError, RenderError
+from resumegen._core.exceptions import MetadataInjectionError, PdfError, RenderError
 from resumegen._core.html_rendering import render_html
 from resumegen._core.pdf import render_pdf
 from resumegen._core.tailor import tailor_resume
 
 __all__ = [
-    "tailor_resume",
-    "render_pdf",
-    "render_html",
-    "ResumeData",
-    "MasterData",
-    "DocumentMetadata",
+    "AccessibilityReport",
     "Config",
-    "PersonalInfo",
-    "ExperienceEntry",
+    "DisplayLink",
+    "DocumentMetadata",
     "EducationEntry",
-    "ProjectEntry",
+    "ExperienceEntry",
+    "MasterData",
     "MasterProjectEntry",
     "MasterSkillEntry",
-    "SkillsSubsection",
-    "DisplayLink",
-    "AccessibilityReport",
-    "scan_accessibility",
+    "MetadataInjectionError",
     "PdfError",
+    "PersonalInfo",
+    "ProjectEntry",
     "RenderError",
+    "ResumeData",
+    "SkillsSubsection",
+    "render_html",
+    "render_pdf",
+    "scan_accessibility",
+    "tailor_resume",
 ]
