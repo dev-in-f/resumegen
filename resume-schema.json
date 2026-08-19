@@ -28,6 +28,10 @@
             "type": "string"
           },
           "description": "Keywords associated with the PDF document."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the PDF document."
         }
       }
     },

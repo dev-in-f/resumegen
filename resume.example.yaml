@@ -7,6 +7,10 @@ document_metadata:
     - resume
     - cv
   language: en-US
+  description: >
+    This is the resume of Jane Doe, an experienced software engineer with a
+    passion for developing innovative programs that expedite the efficiency and
+    effectiveness of organizational success.
 resume_data:
   personal_info:
     name: Jane Doe

@@ -19,6 +19,7 @@ from pydantic import BaseModel, field_validator
 class DocumentMeta(BaseModel):
     title: str
     author: str
+    description: Optional[str] = None
     language: str = "en-US"
     keywords: list[str] = []
 
