@@ -1,9 +1,16 @@
 import logging
 import os
+import sys
 
 import dotenv
 
 dotenv.load_dotenv()
+
+
+class DynamicStderrHandler(logging.StreamHandler):
+    def emit(self, record):
+        self.stream = sys.stderr
+        super().emit(record)
 
 
 class ColorLogFormatter(logging.Formatter):
@@ -12,9 +19,7 @@ class ColorLogFormatter(logging.Formatter):
     red = "\x1b[31;20m"
     bold_red = "\x1b[31;1m"
     reset = "\x1b[0m"
-    format_template = (
-        "%(asctime)s [%(name)s] - %(levelname)s - %(message)s - %(filename)s:%(lineno)d"
-    )
+    format_template = "%(asctime)s [%(name)s] - %(levelname)s - %(message)s"
     FORMATS = {
         logging.DEBUG: grey + format_template + reset,
         logging.INFO: grey + format_template + reset,
@@ -35,7 +40,7 @@ def setup_logging(logger: logging.Logger):
     if log_file:
         logger.addHandler(logging.FileHandler(log_file))
 
-    ch = logging.StreamHandler()
+    ch = DynamicStderrHandler()
     ch.setLevel(os.getenv("RESUMEGEN_LOG_LEVEL", logging.INFO))
     ch.setFormatter(ColorLogFormatter())
     logger.addHandler(ch)
