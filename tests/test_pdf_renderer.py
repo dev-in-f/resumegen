@@ -6,7 +6,7 @@ import pikepdf
 import pytest
 
 from resumegen import pdf as pdf_module
-from resumegen.config import AppConfig, DocumentConfig, DocumentMeta, OutputConfig
+from resumegen.config import Config, DocumentConfig, DocumentMeta, OutputConfig
 from resumegen.pdf import pdf_xmp_metadata_injection, render_pdf
 
 
@@ -63,7 +63,7 @@ class TestPdfXmpMetadataInjection:
 class TestRenderPdf:
     @pytest.fixture
     def app_config(self, template_dir, tmp_path):
-        return AppConfig(
+        return Config(
             template_dir=template_dir,
             output_config=OutputConfig(output_dir=tmp_path / "output"),
         )

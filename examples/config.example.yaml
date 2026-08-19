@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=../schemas/config-schema.json
+# yaml-language-server: $schema=../schemas/config.schema.json
 log_level: INFO
 log_file: app.log
 output_dir: output
@@ -7,13 +7,3 @@ output_filename: "{author}_resume_{date}.pdf"
 overwrite_existing: false
 template_dir: templates
 template_path: template.html.j2
-document_title: Jane Doe's Resume
-document_author: Jane Doe
-document_keywords:
-  - resume
-  - cv
-document_language: en-US
-document_description: >
-  This is the resume of Jane Doe, an experienced software engineer with a
-  passion for developing innovative programs that expedite the efficiency and
-  effectiveness of organizational success.

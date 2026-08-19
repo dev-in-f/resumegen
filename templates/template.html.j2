@@ -5,9 +5,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="{{ document_metadata.author }}">
+    {% if document_metadata.keywords %}
     <meta name="keywords" content="{{ document_metadata.keywords | join(', ') }}">
+    {% endif %}
     <meta name="language" content="{{ document_metadata.language }}">
+    {% if document_metadata.description %}
     <meta name="description" content="{{ document_metadata.description }}">
+    {% endif %}
     <title>{{ document_metadata.title }}</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="fonts/fonts.css">

@@ -1,224 +1,175 @@
 import logging
+import os
 from pathlib import Path
 from typing import Annotated
 
 import typer
 
 from resumegen.config import (
-    AppConfig,
-    DocumentConfig,
-    load_yaml_config,
+    Config,
+    DocumentMetadata,
+    ResumeData,
+    load_yaml_to_data_model,
 )
 from resumegen.pdf import render_pdf
 from resumegen.renderer import output_html
 
 app = typer.Typer()
+DEFAULT_CONFIG_PATH = Path(os.path.expanduser("~/.config/resumegen/config.yaml"))
+
+MAIN_ARGS = {}
 
 
-def setup_logging(level: str, output_file: Path | None = None):
+def setup_logging(level: str, log_file: Path | None = None) -> None:
     mapping = logging.getLevelNamesMapping()
     numeric_level = mapping.get(level.upper(), logging.INFO)
+    handlers: list[logging.Handler] = [logging.StreamHandler()]
+    if log_file:
+        handlers.append(logging.FileHandler(log_file))
     logging.basicConfig(
         level=numeric_level,
-        format="%(levelname)s [%(name)s] %(message)s",
+        format="%(asctime)s - %(levelname)s - %(message)s",
         force=True,
-        handlers=[
-            logging.StreamHandler(),
-            logging.FileHandler(output_file) if output_file else logging.NullHandler(),
-        ],
+        handlers=handlers,
     )
-    logging.getLogger("fontTools").setLevel(logging.ERROR)
-
-
-def strip_none_objects(d: dict) -> dict:
-    """Remove keys with None values from a multi-level dictionary.
-    Intended for determining if a cli flag was provided, otherwise
-    use default/config file
-    """
-    return {
-        key: strip_none_objects(value) if isinstance(value, dict) else value
-        for key, value in d.items()
-        if value is not None
-    }
-
-
-def render_output_with_a11y_report(
-    document_config: DocumentConfig, app_config: AppConfig
-):
-    render_pdf(app_config, document_config, scan_pdf_accessibility=True)
-
-
-def deep_merge(base: dict, overrides: dict) -> dict:
-    for key, value in overrides.items():
-        if (
-            (isinstance(value, dict))
-            and (key in base)
-            and (isinstance(base[key], dict))
-        ):
-            base[key] = deep_merge(base[key], value)
-        else:
-            base[key] = value
-    return base
 
 
 @app.command()
-def default():
-    setup_logging("INFO")
-    app_config = AppConfig()
-    document_config = load_yaml_config(Path(app_config.data_file), DocumentConfig)
-    logging.info("Using default configuration...")
-    render_output_with_a11y_report(document_config, app_config)
-
-
-@app.command()
-def generate(
-    config: Annotated[
+def main(
+    data_file: Annotated[Path, typer.Argument(help="Path to the data file.")],
+    log_level: Annotated[
         str | None,
         typer.Option(
-            "--config",
-            "-c",
-            help="Path to the configuration file. "
-            "Loads default config if not provided.",
-            exists=True,
-            mode="r",
-        ),
-    ] = None,
-    data_file: Annotated[
-        str | None,
-        typer.Option(
-            "--data",
-            "-d",
-            help="Path to the resume data YAML file.",
-            exists=True,
-            mode="r",
-        ),
-    ] = None,
-    output_file: Annotated[
-        str | None,
-        typer.Option(
-            "--output-file",
-            "-o",
-            help="Filename template for the output file. "
-            "Uses default from config if not provided.",
-            mode="rw",
-            dir_okay=True,
-            file_okay=False,
-        ),
-    ] = None,
-    template_filename: Annotated[
-        str | None,
-        typer.Option(
-            "--template",
-            "-t",
-            help="The name of the template to use relative to the template directory,"
-            " defaults to `template.html.j2`",
-            mode="r",
-            exists=True,
-        ),
-    ] = None,
-    force: Annotated[
-        bool,
-        typer.Option("--force", "-f", help="Allow overwrite of existing output file."),
-    ] = False,
-    debug: Annotated[
-        bool,
-        typer.Option(
-            "--debug",
-            help="Enable debug mode with verbose output.",
-        ),
-    ] = False,
-    html: Annotated[
-        bool,
-        typer.Option(
-            "--html",
-            help="Render the template as HTML only, without generating a PDF.",
-        ),
-    ] = False,
-    output_dir: Annotated[
-        str | None,
-        typer.Option(
-            "--output-dir",
-            help="Directory to save the generated resume. "
-            "Overrides config if provided.",
-        ),
-    ] = None,
-    template_dir: Annotated[
-        str | None,
-        typer.Option(
-            "--template-dir",
-            help="Directory containing the resume templates. "
-            "Overrides config if provided.",
+            "--log-level",
+            help="Logging level (e.g., INFO, DEBUG).",
+            envvar="RESUMEGEN_LOG_LEVEL",
         ),
     ] = None,
     log_file: Annotated[
-        str | None,
+        Path | None,
         typer.Option(
-            "--log-file",
-            help="Path to save the log file. Overrides config if provided.",
-            mode="rw",
+            help="Path to the log file.", envvar="RESUMEGEN_LOG_FILE", mode="rw"
         ),
     ] = None,
+    output_dir: Annotated[
+        Path | None,
+        typer.Option(
+            "--output-dir",
+            help="Directory to save the generated resume.",
+            envvar="RESUMEGEN_OUTPUT_DIR",
+            exists=True,
+            file_okay=False,
+            dir_okay=True,
+        ),
+    ] = None,
+    output_template: Annotated[
+        str | None,
+        typer.Option(
+            "--output-template",
+            help="Filename template for the generated resume.",
+            envvar="RESUMEGEN_OUTPUT_FILENAME",
+        ),
+    ] = None,
+    overwrite_existing: Annotated[
+        bool,
+        typer.Option("--force", "-f", help="Allow overwrite of existing output file."),
+    ] = False,
+    template_dir: Annotated[
+        Path | None,
+        typer.Option(
+            "--template-dir",
+            help="Directory containing the resume templates.",
+            envvar="RESUMEGEN_TEMPLATE_DIR",
+        ),
+    ] = None,
+    template_name: Annotated[
+        str | None,
+        typer.Option(
+            "-t",
+            "--template",
+            help="Filename of the resume template to use.",
+            envvar="RESUMEGEN_TEMPLATE_FILENAME",
+        ),
+    ] = None,
+    document_author: Annotated[
+        str | None, typer.Option("--author", help="Author of the resume.")
+    ] = None,
+    document_title: Annotated[
+        str | None, typer.Option("--title", help="Title of the resume.")
+    ] = None,
+    html_only: Annotated[
+        bool, typer.Option("--html", help="Render HTML only, no PDF generation.")
+    ] = False,
+    config_path: Annotated[
+        Path,
+        typer.Option(
+            "-c",
+            "--config",
+            help="Path to the configuration file.",
+            exists=True,
+            mode="r",
+            dir_okay=False,
+            envvar="RESUMEGEN_CONFIG",
+        ),
+    ] = DEFAULT_CONFIG_PATH,
 ):
-    initial_vars = locals().values()
-    setup_logging("DEBUG" if debug else "INFO", Path(log_file) if log_file else None)
-
-    app_config_cli_args = {
-        "output_config": {
-            "output_dir": output_dir,
-            "output_filename": output_file,
-            "overwrite": force,
-        },
-        "template_dir": template_dir,
-        "logging_config": {
-            "level": "DEBUG" if debug else None,
-            "file": log_file,
-        },
-        "data_file": data_file,
-    }
-
-    # keep this dictionary in case we add more overrides later
-    document_config_cli_args = {
-        "template_path": template_filename,
-    }
-
-    if not any(initial_vars):
-        confirm = typer.confirm(
-            "No CLI arguments provided, do you want to run with default config values?"
-            " (You can bypass this check by running `resumegen default`)",
-            default=False,
+    try:
+        config_data = load_yaml_to_data_model(config_path, Config)
+        setup_logging(
+            log_level or config_data.log_level,
+            log_file or config_data.log_file,
         )
-        if not confirm:
-            typer.echo("Aborting. Please provide CLI arguments or a config file.")
-            raise typer.Exit(code=1)
+        logging.info("Configuration loaded successfully.")
+        logging.debug(f"Configuration data: {config_data}")
+        resume_data = load_yaml_to_data_model(data_file, ResumeData)
+        logging.info("Resume data loaded successfully.")
+        logging.debug(f"Resume data loaded: {resume_data}")
+        resume_metadata = resume_data.document_metadata
+        document_metadata = DocumentMetadata(
+            author=document_author or resume_metadata.author,
+            title=document_title or resume_metadata.title,
+            language=resume_metadata.language,
+            description=resume_metadata.description,
+            keywords=resume_metadata.keywords,
+        )
+
+        logging.debug(f"Final document metadata: {document_metadata}")
+        working_template_dir = template_dir or config_data.template_dir
+        working_template_name = template_name or config_data.template_name
+        working_output_dir = output_dir or config_data.output_dir
+        working_output_filename = output_template or config_data.output_filename
+
+        if html_only:
+            logging.info("Rendering HTML only...")
+            output = output_html(
+                working_template_dir,
+                working_template_name,
+                document_metadata,
+                resume_data,
+                working_output_filename,
+                working_output_dir,
+            )
+            logging.info(f"HTML generated at: {output.resolve()}")
         else:
-            default()
-            return
+            logging.info("Rendering PDF...")
+            output, report = render_pdf(
+                working_template_dir,
+                working_template_name,
+                working_output_filename,
+                working_output_dir,
+                document_metadata,
+                resume_data,
+                overwrite_existing or config_data.overwrite_existing,
+            )
+            logging.info(f"PDF generated at: {output.resolve()}")
+            if report:
+                logging.info("Accessibility report:")
+                report.print()
 
-    app_config_raw = (
-        load_yaml_config(Path(config), AppConfig) if config else AppConfig()
-    )
-    app_config = AppConfig.model_validate(
-        deep_merge(app_config_raw.model_dump(), strip_none_objects(app_config_cli_args))
-    )
-    log_level = "DEBUG" if debug else app_config.logging_config.level
-    if log_file:
-        log_path = Path(log_file)
-    elif app_config.logging_config.file:
-        log_path = Path(app_config.logging_config.file)
-    else:
-        log_path = None
-    setup_logging(log_level, log_path)
+    except Exception as e:
+        logging.exception(f"Failed to generate resume: {e}")
+        raise typer.Exit(code=1) from e
 
-    document_config = load_yaml_config(Path(app_config.data_file), DocumentConfig)
-    document_config = DocumentConfig.model_validate(
-        deep_merge(
-            document_config.model_dump(), strip_none_objects(document_config_cli_args)
-        )
-    )
 
-    logging.info("Document configuration loaded...")
-
-    if html:
-        output_html(document_config, app_config)
-    else:
-        render_output_with_a11y_report(document_config, app_config)
+if __name__ == "__main__":
+    app()

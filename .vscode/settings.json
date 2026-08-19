@@ -1,5 +1,6 @@
 {
   "python.testing.pytestArgs": ["tests", "--cov-report=term-missing"],
   "python.testing.unittestEnabled": false,
-  "python.testing.pytestEnabled": true
+  "python.testing.pytestEnabled": true,
+  "conventionalCommits.scopes": ["config"]
 }

@@ -6,7 +6,7 @@ from pydantic import ValidationError
 
 from resumegen import config as resumegen_config
 from resumegen.config import (
-    AppConfig,
+    Config,
     DisplayLink,
     DocumentConfig,
     DocumentMeta,
@@ -18,7 +18,7 @@ from resumegen.config import (
     ProjectEntry,
     ResumeData,
     SkillsSubsection,
-    load_yaml_config,
+    load_yaml_to_data_model,
 )
 
 
@@ -404,7 +404,7 @@ class TestOutputConfig:
 
 class TestAppConfig:
     def test_valid_minimal(self):
-        c = AppConfig()
+        c = Config()
         assert c.logging_config.level == "INFO"
         assert c.logging_config.file is None
         assert c.output_config.output_dir == Path("output").resolve()
@@ -416,7 +416,7 @@ class TestAppConfig:
     def test_valid_custom_template_dir(self, tmp_path):
         custom_template_dir = tmp_path / "my_templates"
         custom_template_dir.mkdir()
-        c = AppConfig(template_dir=custom_template_dir)
+        c = Config(template_dir=custom_template_dir)
         assert c.template_dir == custom_template_dir.resolve()
 
     def test_nonexistent_template_dir_warns_and_creates(self, tmp_path):
@@ -425,7 +425,7 @@ class TestAppConfig:
         with pytest.warns(
             UserWarning, match="Template directory does not exist, creating"
         ):
-            c = AppConfig(template_dir=non_existent_dir)
+            c = Config(template_dir=non_existent_dir)
         assert non_existent_dir.exists()
         assert non_existent_dir.is_dir()
         assert c.template_dir == non_existent_dir.resolve()
@@ -437,7 +437,7 @@ class TestAppConfig:
         with pytest.warns(
             UserWarning, match="Template path exists but is not a directory"
         ):
-            c = AppConfig(template_dir=not_a_dir_path)
+            c = Config(template_dir=not_a_dir_path)
         assert default_dir.exists()
         assert default_dir.is_dir()
         assert c.template_dir == default_dir.resolve()
@@ -449,7 +449,7 @@ class TestAppConfig:
         with pytest.warns(
             UserWarning, match="Template path exists but is not a directory"
         ):
-            c = AppConfig(template_dir=not_a_dir_path)
+            c = Config(template_dir=not_a_dir_path)
         assert default_dir.exists()
         assert default_dir.is_dir()
         assert c.template_dir == default_dir.resolve()
@@ -459,26 +459,26 @@ class TestAppConfig:
         relative_path = Path("relative_templates")
         relative_path.mkdir()
         (relative_path / "template.html.j2").write_text("<html></html>")
-        c = AppConfig(template_dir=relative_path)
+        c = Config(template_dir=relative_path)
         assert c.template_dir == (package_dir() / relative_path).resolve()
 
     def test_nonexistent_data_file_warns_and_returns_none(self, tmp_path):
         missing_file = tmp_path / "missing.yaml"
         with pytest.warns(UserWarning, match="Data file does not exist"):
-            c = AppConfig(data_file=missing_file)
+            c = Config(data_file=missing_file)
         assert c.data_file is None
 
     def test_data_file_not_a_file_warns_and_returns_none(self, tmp_path):
         directory_path = tmp_path / "a_directory"
         directory_path.mkdir()
         with pytest.warns(UserWarning, match="Data file does not exist"):
-            c = AppConfig(data_file=directory_path)
+            c = Config(data_file=directory_path)
         assert c.data_file is None
 
     def test_valid_absolute_data_file_resolved(self, tmp_path):
         data_file = tmp_path / "resume_data.yaml"
         data_file.write_text("personal_info: {}")
-        c = AppConfig(data_file=data_file)
+        c = Config(data_file=data_file)
         assert c.data_file == data_file.resolve()
 
     def test_relative_data_file_resolved_against_package_dir(
@@ -487,7 +487,7 @@ class TestAppConfig:
         monkeypatch.chdir(tmp_path)
         relative_file = Path("my_resume_data.yaml")
         relative_file.write_text("personal_info: {}")
-        c = AppConfig(data_file=relative_file)
+        c = Config(data_file=relative_file)
         assert c.data_file == (package_dir() / relative_file).resolve()
 
 
@@ -512,7 +512,7 @@ class TestLoadYamlConfig:
                 location: New York, NY
             """,
         )
-        config = load_yaml_config(yaml_file, DocumentConfig)
+        config = load_yaml_to_data_model(yaml_file, DocumentConfig)
         assert isinstance(config, DocumentConfig)
         assert config.document_metadata.title == "My Resume"
         assert config.resume_data.personal_info.name == "Jane Doe"
@@ -560,7 +560,7 @@ class TestLoadYamlConfig:
                   gpa: "3.8"
             """,
         )
-        config = load_yaml_config(yaml_file, DocumentConfig)
+        config = load_yaml_to_data_model(yaml_file, DocumentConfig)
         assert config.document_metadata.keywords == ["python", "devops"]
         assert config.resume_data.personal_info.phone == "555-0100"
         assert len(config.resume_data.experience) == 1
@@ -584,12 +584,12 @@ class TestLoadYamlConfig:
             """,
         )
         with pytest.raises(ValidationError) as exc_info:
-            load_yaml_config(yaml_file, DocumentConfig)
+            load_yaml_to_data_model(yaml_file, DocumentConfig)
         assert "author" in str(exc_info.value)
 
     def test_nonexistent_file_raises(self, tmp_path):
         with pytest.raises(FileNotFoundError):
-            load_yaml_config(tmp_path / "nonexistent.yaml", DocumentConfig)
+            load_yaml_to_data_model(tmp_path / "nonexistent.yaml", DocumentConfig)
 
     def test_template_path_in_yaml_loaded_as_path(self, tmp_path):
         yaml_file = self._write_yaml(
@@ -606,7 +606,7 @@ class TestLoadYamlConfig:
                 location: NYC
             """,
         )
-        config = load_yaml_config(yaml_file, DocumentConfig)
+        config = load_yaml_to_data_model(yaml_file, DocumentConfig)
         assert config.template_filename.name == "template.html.j2"
 
     def test_load_app_config_yaml(self, tmp_path):
@@ -621,7 +621,7 @@ class TestLoadYamlConfig:
             data_file: {data_file}
             """,
         )
-        config = load_yaml_config(yaml_file, AppConfig)
-        assert isinstance(config, AppConfig)
+        config = load_yaml_to_data_model(yaml_file, Config)
+        assert isinstance(config, Config)
         assert config.template_dir == template_dir.resolve()
         assert config.data_file == data_file.resolve()

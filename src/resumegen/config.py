@@ -63,7 +63,16 @@ class EducationEntry(BaseModel):
     honors: Optional[list[str]] = None
 
 
+class DocumentMetadata(BaseModel):
+    author: str
+    title: str
+    language: Optional[str] = "en-US"
+    description: Optional[str] = None
+    keywords: Optional[list[str]] = None
+
+
 class ResumeData(BaseModel):
+    document_metadata: DocumentMetadata
     personal_info: PersonalInfo
     statement: Optional[str] = None
     skill_sections: list[SkillsSubsection] = []
@@ -85,15 +94,10 @@ class Config(BaseModel):
     log_level: str = "INFO"
     log_file: Optional[Path] = None
     output_dir: Path = Path("output").resolve()
-    output_filename: str = "{document_author}_resume_{date}.pdf"
+    output_filename: str = "{author}_resume_{date}.pdf"
     overwrite_existing: bool = False
     template_dir: Path = Path("templates").resolve()
-    template_filename: Path = Path("template.html.j2")
-    document_title: str
-    document_author: str
-    document_description: Optional[str] = None
-    document_language: Optional[str] = "en-US"
-    document_keywords: Optional[list[str]] = None
+    template_name: str = "template.html.j2"
 
     @field_validator("template_dir")
     @classmethod
@@ -119,8 +123,6 @@ class Config(BaseModel):
                 )
                 default_dir.mkdir(parents=True, exist_ok=True)
             return default_dir.resolve()
-        if not path.is_absolute():
-            path = Path(__file__).parent / path
         return path.resolve()
 
     @field_validator("output_dir")
@@ -171,5 +173,7 @@ class Config(BaseModel):
 def load_yaml_to_data_model[T: BaseModel](file_path: Path, model: type[T]) -> T:
     with open(file_path) as f:
         data = yaml.safe_load(f)
-        logging.debug(f"Loaded YAML from {file_path}: {data}")
-    return model(**data)
+    try:
+        return model(**data)
+    except Exception as e:
+        raise ValueError(f"Failed to load data into model {model.__name__}: {e}") from e

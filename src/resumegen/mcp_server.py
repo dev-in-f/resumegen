@@ -5,7 +5,12 @@ import pikepdf
 from mcp.server.fastmcp import FastMCP
 
 from resumegen.accessibility import AccessibilityReport, scan_accessibility
-from resumegen.config import AppConfig, DocumentConfig, OutputConfig, load_yaml_config
+from resumegen.config import (
+    Config,
+    DocumentConfig,
+    OutputConfig,
+    load_yaml_to_data_model,
+)
 from resumegen.pdf import render_pdf
 
 mcp = FastMCP("resumegen")
@@ -24,8 +29,8 @@ def generate_resume(yaml_content: str, output_path: str) -> str:
     with tempfile.NamedTemporaryFile(suffix=".yaml", delete=False, mode="w") as f:
         f.write(yaml_content)
         tmp_path = Path(f.name)
-    doc_config = load_yaml_config(tmp_path, DocumentConfig)
-    app_config = AppConfig(output_config=OutputConfig(output_dir=Path(output_path)))
+    doc_config = load_yaml_to_data_model(tmp_path, DocumentConfig)
+    app_config = Config(output_config=OutputConfig(output_dir=Path(output_path)))
     out = render_pdf(app_config, doc_config)
     return f"PDF written to: {out.resolve()}"
 
@@ -40,7 +45,7 @@ def validate_resume_yaml(yaml_content: str) -> str:
         tmp_path = Path(f.name)
 
     try:
-        load_yaml_config(tmp_path, DocumentConfig)
+        load_yaml_to_data_model(tmp_path, DocumentConfig)
         return "YAML is valid."
     except SystemExit:
         return "Validation failed - check schema errors above."

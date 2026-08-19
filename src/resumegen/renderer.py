@@ -1,22 +1,31 @@
 import logging
 from datetime import datetime
+from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
 
-from resumegen.config import AppConfig, DocumentConfig, DocumentMeta
+from resumegen.config import DocumentMetadata, ResumeData
 
 
-def render_html(document_config: DocumentConfig, app_config: AppConfig) -> str:
-    env = Environment(loader=FileSystemLoader(app_config.template_dir))
-    template = env.get_template(document_config.template_filename.name)
+def render_html(
+    template_dir: Path,
+    template_name: str,
+    document_metadata: DocumentMetadata,
+    resume_data: ResumeData,
+) -> str:
+    env = Environment(loader=FileSystemLoader(template_dir))
+    template = env.get_template(template_name)
     html = template.render(
-        **{**document_config.model_dump(), **app_config.model_dump()}
+        **{
+            "document_metadata": document_metadata.model_dump(),
+            "resume_data": resume_data.model_dump(),
+        }
     )
     logging.debug(f"Rendered HTML content:\n{html}")
     return html
 
 
-def _sanitize_metadata(metadata: DocumentMeta) -> dict[str, str]:
+def _sanitize_metadata(metadata: DocumentMetadata) -> dict[str, str]:
     """Normalize metadata values for filename rendering."""
     metadata_dict = metadata.model_dump()
     for key, value in metadata_dict.items():
@@ -29,24 +38,30 @@ def _sanitize_metadata(metadata: DocumentMeta) -> dict[str, str]:
     return metadata_dict
 
 
-def render_output_filename(
-    document_config: DocumentConfig, app_config: AppConfig
-) -> str:
+def render_output_filename(filename_template: str, metadata: DocumentMetadata) -> str:
     """Renders the output filename based on the template and document metadata.
     Supports placeholders matching DocumentMeta attributes."""
-    output_filename = app_config.output_config.output_filename
-    metadata = _sanitize_metadata(document_config.document_metadata)
+    output_filename = filename_template
+    clean_metadata = _sanitize_metadata(metadata)
     date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     logging.debug(f"Rendering output filename with template: {output_filename}")
-    return output_filename.format(**metadata, date=date_str)
+    return output_filename.format(**clean_metadata, date=date_str)
 
 
-def output_html(document_config: DocumentConfig, app_config: AppConfig) -> str:
-    html_content = render_html(document_config, app_config)
-    output_filename = render_output_filename(document_config, app_config)
-    output_path = app_config.output_config.output_dir / output_filename
+def output_html(
+    template_dir: Path,
+    template_name: str,
+    document_metadata: DocumentMetadata,
+    resume_data: ResumeData,
+    filename_template: str,
+    output_dir: Path,
+) -> Path:
+    html_content = render_html(
+        template_dir, template_name, document_metadata, resume_data
+    )
+    output_filename = render_output_filename(filename_template, document_metadata)
+    output_path = output_dir / output_filename
     output_path = output_path.with_suffix(".html")
-    logging.info(f"Saving rendered HTML to: {output_path}")
     with open(output_path, "w") as f:
         f.write(html_content)
-    return str(output_path)
+    return output_path

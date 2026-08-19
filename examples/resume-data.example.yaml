@@ -1,6 +1,9 @@
 ---
 # yaml-language-server: $schema=../schemas/resume-data.schema.json
-
+document_metadata:
+  title: Jane Doe's Resume
+  author: Jane Doe
+  language: en-US
 personal_info:
   name: Jane Doe
   email: jane@example.com

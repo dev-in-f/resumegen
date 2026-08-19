@@ -8,9 +8,41 @@
     "experience",
     "skill_sections",
     "education",
-    "projects"
+    "projects",
+    "document_metadata"
   ],
   "properties": {
+    "document_metadata": {
+      "type": "object",
+      "description": "Metadata for the generated document.",
+      "required": ["title", "author"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Title of the generated document."
+        },
+        "author": {
+          "type": "string",
+          "description": "Author of the generated document."
+        },
+        "description": {
+          "type": ["string"],
+          "description": "Description of the generated document."
+        },
+        "language": {
+          "type": ["string"],
+          "description": "Language of the generated document, e.g., 'en-US'.",
+          "default": "en-US"
+        },
+        "keywords": {
+          "type": ["array"],
+          "items": {
+            "type": "string"
+          },
+          "description": "Keywords associated with the generated document."
+        }
+      }
+    },
     "personal_info": {
       "type": "object",
       "description": "Personal information of the resume owner.",

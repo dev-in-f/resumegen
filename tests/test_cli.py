@@ -5,7 +5,7 @@ import pytest
 from typer.testing import CliRunner
 
 from resumegen.cli import app
-from resumegen.config import AppConfig, OutputConfig
+from resumegen.config import Config, OutputConfig
 
 # Path to test fixtures
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
@@ -79,7 +79,7 @@ def test_default_command(runner, complete_test_setup):
 
     with patch(
         "resumegen.cli.AppConfig",
-        lambda **kwargs: AppConfig(
+        lambda **kwargs: Config(
             template_dir=templates_dir,
             data_file=data_file,
             output_config=OutputConfig(output_dir=output_dir),

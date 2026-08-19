@@ -1,4 +1,5 @@
 import logging
+from importlib import resources
 from io import BytesIO
 from pathlib import Path
 
@@ -7,13 +8,13 @@ from pikepdf import Dictionary, String
 from weasyprint import HTML
 
 from resumegen.accessibility import AccessibilityReport, scan_accessibility
-from resumegen.config import AppConfig, DocumentConfig, DocumentMeta
+from resumegen.config import DocumentMetadata, ResumeData
 from resumegen.renderer import render_html, render_output_filename
 
 
 def _html_to_pdf(
     html_content: str,
-    base_url: str,
+    base_url: Path,
     overwrite: bool = False,
 ) -> pikepdf.Pdf:
     document = HTML(string=html_content, base_url=base_url).render()
@@ -24,42 +25,54 @@ def _html_to_pdf(
 
 
 def render_pdf(
-    app_config: AppConfig,
-    document_config: DocumentConfig,
+    template_dir: Path,
+    template_name: str,
+    filename_template: str,
+    output_dir: Path,
+    document_metadata: DocumentMetadata,
+    resume_data: ResumeData,
+    overwrite_existing: bool = False,
     scan_pdf_accessibility: bool = True,
-) -> Path:
-    html_content = render_html(document_config, app_config)
-    output_filename = render_output_filename(document_config, app_config)
-    output_path = app_config.output_config.output_dir / output_filename
-    pdf = _html_to_pdf(
-        html_content,
-        base_url=str(Path(__file__).parent),
-        overwrite=app_config.output_config.overwrite,
+) -> tuple[Path, AccessibilityReport | None]:
+    html_content = render_html(
+        template_dir, template_name, document_metadata, resume_data
     )
-    pdf_xmp_metadata_injection(pdf, document_config.document_metadata)
+    output_filename = render_output_filename(filename_template, document_metadata)
+    output_path = output_dir / output_filename
+    with resources.path("resumegen", "templates") as fspath:
+        pdf = _html_to_pdf(
+            html_content,
+            fspath,
+            overwrite_existing,
+        )
+    pdf_xmp_metadata_injection(pdf, document_metadata)
     if scan_pdf_accessibility:
         report: AccessibilityReport = scan_accessibility(pdf)
-        logging.info("Accessibility scan completed. Report:")
-        report.print()
-    pdf.save(output_path)
-    logging.info(f"PDF generated at: {output_path.resolve()}")
-    return output_path
+        pdf.save(output_path)
+        return output_path, report
+    else:
+        pdf.save(output_path)
+        return output_path, None
 
 
 def pdf_xmp_metadata_injection(
-    pdf: pikepdf.Pdf, document_metadata: DocumentMeta
+    pdf: pikepdf.Pdf, document_metadata: DocumentMetadata
 ) -> None:
     logging.debug(f"Original PDF metadata: {pdf.open_metadata()}")
     with pdf.open_metadata() as meta:
         meta["dc:title"] = document_metadata.title
-        meta["dc:language"] = document_metadata.language
+        meta["dc:language"] = document_metadata.language  # type: ignore default always set through model
         meta["xmpRights:Owner"] = document_metadata.author
-        meta["dc:subject"] = ", ".join(document_metadata.keywords)
+        meta["dc:subject"] = (
+            ", ".join(document_metadata.keywords) if document_metadata.keywords else ""
+        )
         meta["dc:creator"] = [document_metadata.author]
         meta["xmp:CreatorTool"] = "ResumeGen v1"
-        meta["pdf:keywords"] = ", ".join(document_metadata.keywords)
+        meta["pdf:keywords"] = (
+            ", ".join(document_metadata.keywords) if document_metadata.keywords else ""
+        )
         meta["pdfuaid:part"] = "1"
-    pdf.Root.lang = String(document_metadata.language)
+    pdf.Root.lang = String(document_metadata.language)  # type: ignore default always set through model
     pdf.Root.MarkInfo = Dictionary(Marked=True)
     pdf.Root.ViewerPreferences = Dictionary(DisplayDocTitle=True)
     logging.debug(f"Updated PDF metadata: {pdf.open_metadata()}")
