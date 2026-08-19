@@ -82,7 +82,7 @@ class ResumeData(BaseModel):
 
 class DocumentConfig(BaseModel):
     document_metadata: DocumentMeta
-    template_path: Path = Path("template.html.j2")
+    template_filename: Path = Path("template.html.j2")
     resume_data: ResumeData
 
 

@@ -267,10 +267,10 @@ class TestDocumentConfig:
         config = DocumentConfig(
             document_metadata=minimal_document_metadata,
             resume_data=minimal_resume_data,
-            template_path=str(template_dir / "template.html.j2"),
+            template_filename=str(template_dir / "template.html.j2"),
         )
-        assert Path(config.template_path).is_file()
-        assert (Path(config.template_path)).exists()
+        assert Path(config.template_filename).is_file()
+        assert (Path(config.template_filename)).exists()
 
     def test_template_path_resolved_to_absolute(
         self, template_dir, minimal_resume_data, minimal_document_metadata
@@ -278,9 +278,9 @@ class TestDocumentConfig:
         config = DocumentConfig(
             document_metadata=minimal_document_metadata,
             resume_data=minimal_resume_data,
-            template_path=str(template_dir / "template.html.j2"),
+            template_filename=str(template_dir / "template.html.j2"),
         )
-        assert Path(config.template_path).is_absolute()
+        assert Path(config.template_filename).is_absolute()
 
     def test_relative_template_path_stored_as_path(
         self, minimal_resume_data, minimal_document_metadata
@@ -288,10 +288,10 @@ class TestDocumentConfig:
         config = DocumentConfig(
             document_metadata=minimal_document_metadata,
             resume_data=minimal_resume_data,
-            template_path="template.html.j2",
+            template_filename="template.html.j2",
         )
-        assert config.template_path == Path("template.html.j2")
-        assert config.template_path.name == "template.html.j2"
+        assert config.template_filename == Path("template.html.j2")
+        assert config.template_filename.name == "template.html.j2"
 
     def test_nonexistent_template_path_accepted(
         self, tmp_path, minimal_resume_data, minimal_document_metadata
@@ -299,10 +299,10 @@ class TestDocumentConfig:
         # Existence is validated at render time by Jinja2, not at config parse time
         config = DocumentConfig(
             document_metadata=minimal_document_metadata,
-            template_path=str(tmp_path / "missing" / "template.html.j2"),
+            template_filename=str(tmp_path / "missing" / "template.html.j2"),
             resume_data=minimal_resume_data,
         )
-        assert config.template_path.name == "template.html.j2"
+        assert config.template_filename.name == "template.html.j2"
 
     def test_template_path_directory_accepted(
         self, tmp_path, minimal_resume_data, minimal_document_metadata
@@ -310,15 +310,15 @@ class TestDocumentConfig:
         # Existence is validated at render time by Jinja2, not at config parse time
         config = DocumentConfig(
             document_metadata=minimal_document_metadata,
-            template_path=str(tmp_path),
+            template_filename=str(tmp_path),
             resume_data=minimal_resume_data,
         )
-        assert config.template_path == tmp_path
+        assert config.template_filename == tmp_path
 
     def test_missing_document_metadata_raises(self, template_dir, minimal_resume_data):
         with pytest.raises(ValidationError) as exc_info:
             DocumentConfig(
-                template_path=str(template_dir / "template.html.j2"),
+                template_filename=str(template_dir / "template.html.j2"),
                 resume_data=minimal_resume_data,
             )
         assert "document_metadata" in str(exc_info.value)
@@ -327,7 +327,7 @@ class TestDocumentConfig:
         with pytest.raises(ValidationError) as exc_info:
             DocumentConfig(
                 document_metadata=minimal_document_metadata,
-                template_path=str(template_dir / "template.html.j2"),
+                template_filename=str(template_dir / "template.html.j2"),
             )
         assert "resume_data" in str(exc_info.value)
 
@@ -599,7 +599,7 @@ class TestLoadYamlConfig:
             """,
         )
         config = load_yaml_config(yaml_file, DocumentConfig)
-        assert config.template_path.name == "template.html.j2"
+        assert config.template_filename.name == "template.html.j2"
 
     def test_load_app_config_yaml(self, tmp_path):
         template_dir = tmp_path / "templates"

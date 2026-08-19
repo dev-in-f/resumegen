@@ -8,7 +8,7 @@ from resumegen.config import AppConfig, DocumentConfig, DocumentMeta
 
 def render_html(document_config: DocumentConfig, app_config: AppConfig) -> str:
     env = Environment(loader=FileSystemLoader(app_config.template_dir))
-    template = env.get_template(document_config.template_path.name)
+    template = env.get_template(document_config.template_filename.name)
     html = template.render(
         **{**document_config.model_dump(), **app_config.model_dump()}
     )
