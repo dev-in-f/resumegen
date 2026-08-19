@@ -26,3 +26,11 @@ class TestLogging:
         with open(log_file) as f:
             content = f.read()
         assert "Test log message" in content
+
+    def test_setup_logging_verbose_env_var(self, monkeypatch):
+        monkeypatch.setenv("RESUMEGEN_VERBOSE", "1")
+        logger = logging.getLogger("test_logger")
+        setup_logging(logger)
+        assert logger.level == logging.DEBUG
+        for log in ["weasyprint", "pikepdf", "litellm", "fontTools"]:
+            assert logging.getLogger(log).level == logging.DEBUG

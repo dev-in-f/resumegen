@@ -6,6 +6,13 @@ import dotenv
 
 dotenv.load_dotenv()
 
+LIBRARY_LOGGERS = [
+    "weasyprint",
+    "pikepdf",
+    "litellm",
+    "fontTools",
+]
+
 
 class DynamicStderrHandler(logging.StreamHandler):
     def emit(self, record):
@@ -35,7 +42,16 @@ class ColorLogFormatter(logging.Formatter):
 
 
 def setup_logging(logger: logging.Logger):
-    logger.setLevel(os.getenv("RESUMEGEN_LOG_LEVEL", logging.INFO))
+    if os.getenv("RESUMEGEN_VERBOSE") == "1":
+        logger.setLevel(logging.DEBUG)
+        for log in LIBRARY_LOGGERS:
+            logging.getLogger(log).setLevel(logging.DEBUG)
+    else:
+        for log in LIBRARY_LOGGERS:
+            logging.getLogger(log).setLevel(
+                os.getenv("RESUMEGEN_LOG_LEVEL", logging.INFO)
+            )
+        logger.setLevel(os.getenv("RESUMEGEN_LOG_LEVEL", logging.INFO))
     log_file = os.getenv("RESUMEGEN_LOG_FILE")
     if log_file:
         logger.addHandler(logging.FileHandler(log_file))

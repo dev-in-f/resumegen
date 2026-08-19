@@ -23,27 +23,16 @@ from resumegen._core.config import (
     RESUMEGEN_DEFAULT_CONFIG_PATH,
     load_yaml_to_data_model,
 )
-from resumegen._core.logging import color_message, setup_logging
+from resumegen._core.logging import LIBRARY_LOGGERS, color_message, setup_logging
 
 bootstrap()
 logger = logging.getLogger(__name__)
+
+
 setup_logging(logger)
 
 
-def common_options(f) -> click.Command:
-    f = click.option(
-        "--log-level",
-        envvar="RESUMEGEN_LOG_LEVEL",
-        default=None,
-        help="Logging level (e.g., INFO, DEBUG).",
-    )(f)
-    f = click.option(
-        "--log-file",
-        envvar="RESUMEGEN_LOG_FILE",
-        default=None,
-        type=click.Path(path_type=Path),
-        help="Path to the log file.",
-    )(f)
+def common_render_options(f) -> click.Command:
     f = click.option(
         "--output-dir",
         default=None,
@@ -63,7 +52,34 @@ def common_options(f) -> click.Command:
     return f
 
 
-def _override_logging_options(log_level: str | None, log_file: Path | None):
+def logging_options(f) -> click.Command:
+    f = click.option(
+        "--log-level",
+        envvar="RESUMEGEN_LOG_LEVEL",
+        default=None,
+        help="Logging level (e.g., INFO, DEBUG).",
+    )(f)
+    f = click.option(
+        "--log-file",
+        envvar="RESUMEGEN_LOG_FILE",
+        default=None,
+        type=click.Path(path_type=Path),
+        help="Path to the log file.",
+    )(f)
+    f = click.option(
+        "-v",
+        "--verbose",
+        is_flag=True,
+        default=False,
+        help="Enable verbose logging (DEBUG level including imported module loggers).",
+        envvar="RESUMEGEN_VERBOSE",
+    )(f)
+    return f
+
+
+def _override_logging_options(
+    log_level: str | None, log_file: Path | None, verbose: bool = False
+) -> None:
     logger = logging.getLogger(__name__)
     if log_level:
         logger.setLevel(log_level)
@@ -73,10 +89,15 @@ def _override_logging_options(log_level: str | None, log_file: Path | None):
                 logger.removeHandler(handler)
                 handler.close()
         logger.addHandler(logging.FileHandler(log_file))
+    if verbose:
+        logger.setLevel(logging.DEBUG)
+        for logger in LIBRARY_LOGGERS:
+            logging.getLogger(logger).setLevel(logging.DEBUG)
 
 
 @click.command()
-@common_options
+@common_render_options
+@logging_options
 @click.argument(
     "data_file",
     type=click.Path(path_type=Path, dir_okay=False, exists=True),
@@ -116,6 +137,7 @@ def render(
     data_file: Path,
     log_level: str | None,
     log_file: Path | None,
+    verbose: bool,
     output_dir: Path | None,
     output_template: str | None,
     overwrite_existing: bool,
@@ -127,9 +149,10 @@ def render(
     config_path: Path,
 ):
     """
-    data_file reads from stdin or takes a file path
+    Render a resume from a YAML data file into a PDF using a Jinja2 template.
+    DATA_FILE reads from stdin or takes a file path
     """
-    _override_logging_options(log_level, log_file)
+    _override_logging_options(log_level, log_file, verbose)
     try:
         config_data = load_yaml_to_data_model(config_path, Config)
 
@@ -207,7 +230,8 @@ def render(
 
 
 @click.command()
-@common_options
+@common_render_options
+@logging_options
 @click.argument(
     "master_data_file",
     type=click.Path(path_type=Path, dir_okay=False, exists=True),
@@ -268,18 +292,22 @@ def render(
 def tailor(
     master_data_file: Path,
     job_description_file: Path,
+    log_level: str | None,
+    log_file: Path | None,
+    verbose: bool,
     job_title: str | None,
     model: str | None,
     base_url: str | None,
     track_cost: bool,
     save_to_file: bool,
-    log_level: str | None,
-    log_file: Path | None,
     output_dir: Path | None,
     config_path: Path,
     output_filename: str | None = None,
 ):
-    _override_logging_options(log_level, log_file)
+    """
+    Tailor resume data based on a job description using a LLM.
+    """
+    _override_logging_options(log_level, log_file, verbose)
     try:
         app_config = load_yaml_to_data_model(config_path, Config)
         logger.debug("Configuration loaded.")
@@ -329,14 +357,18 @@ def tailor(
 
 
 @click.command()
+@logging_options
 @click.argument(
     "pdf_file",
     type=click.Path(path_type=Path, dir_okay=False, exists=True),
 )
-def scan_pdf(pdf_file):
+def scan_pdf(
+    pdf_file: Path, log_level: str | None, log_file: Path | None, verbose: bool
+):
     """
     Scan a PDF for accessibility issues.
     """
+    _override_logging_options(log_level, log_file, verbose)
     try:
         click.echo(
             color_message("🦾  Scanning PDF for accessibility issues...", "cyan")
