@@ -13,7 +13,7 @@ from resumegen._core.html_rendering import (
 )
 
 
-class TestJinjaRenderer:
+class TestHTMLRendering:
     @pytest.fixture(autouse=True)
     def setup(self, tmp_path, fixtures_dir):
         self.config = Config(
@@ -72,3 +72,17 @@ class TestJinjaRenderer:
             assert "Acme Co." in content
             assert "Python" in content
             assert "</div>" in content
+
+    def test_render_html_no_save_returns_content(self, minimal_resume_data):
+        html_content = render_html(
+            minimal_resume_data,
+            self.config.output_dir,
+            self.config.output_filename,
+            self.config.template_name,
+            self.config.template_dir,
+            save_to_file=False,
+        )
+        assert "Jane Doe" in html_content
+        assert "Acme Co." in html_content
+        assert "Python" in html_content
+        assert "</div>" in html_content
