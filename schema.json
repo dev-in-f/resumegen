@@ -1,0 +1,239 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Resume Generator Configuration Schema",
+  "description": "JSON Schema for validating the configuration of the Resume Generator application.",
+  "type": "object",
+  "required": ["meta", "template_dir", "resume_data"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "description": "Metadata for the PDF document",
+      "required": ["title", "author"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Title of the PDF document."
+        },
+        "author": {
+          "type": "string",
+          "description": "Author of the PDF document."
+        },
+        "language": {
+          "type": "string",
+          "description": "Language of the PDF document."
+        },
+        "keywords": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Keywords associated with the PDF document."
+        }
+      }
+    },
+    "template_dir": {
+      "type": "string",
+      "description": "Path to the directory containing a template.html.j2 file."
+    },
+    "resume_data": {
+      "type": "object",
+      "required": [
+        "personal_info",
+        "experience",
+        "skill_sections",
+        "education",
+        "projects"
+      ],
+      "description": "Structured data representing the content of the resume.",
+      "properties": {
+        "personal_info": {
+          "type": "object",
+          "description": "Personal information of the resume owner.",
+          "required": ["name", "email", "location"],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Full name of the resume owner."
+            },
+            "email": {
+              "type": "string",
+              "description": "Email address of the resume owner.",
+              "exclusiveMinimum": 0
+            },
+            "location": {
+              "type": "string",
+              "description": "Location of the resume owner."
+            },
+            "phone": {
+              "type": "string",
+              "description": "Phone number of the resume owner."
+            },
+            "linkedin": {
+              "type": "string",
+              "description": "LinkedIn profile URL of the resume owner. Must match the pattern linkedin.com/in/username.",
+              "pattern": "^linkedin\\.com/in/[a-zA-Z0-9\\-]+$"
+            },
+            "github": {
+              "type": "string",
+              "description": "GitHub profile URL of the resume owner. Must match the pattern github.com/username.",
+              "pattern": "^github\\.com/[a-zA-Z0-9\\-]+$"
+            }
+          }
+        },
+        "statement": {
+          "type": "string",
+          "description": "A personal statement or summary about the resume owner."
+        },
+        "experience": {
+          "type": "array",
+          "description": "List of work experience entries.",
+          "items": {
+            "type": "object",
+            "required": ["company", "title", "start_date", "location"],
+            "properties": {
+              "company": {
+                "type": "string",
+                "description": "Name of the company."
+              },
+              "title": {
+                "type": "string",
+                "description": "Job title or position held."
+              },
+              "start_date": {
+                "type": "string",
+                "description": "Start date of the job (e.g., 'Jan 2020')."
+              },
+              "end_date": {
+                "type": ["string", "null"],
+                "description": "End date of the job (e.g., 'Dec 2021' or null if currently employed)."
+              },
+              "description_bullets": {
+                "type": "array",
+                "description": "List of bullet points describing responsibilities and achievements in the role.",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "location": {
+                "type": "string",
+                "description": "Location of the job."
+              }
+            }
+          }
+        },
+        "projects": {
+          "type": "array",
+          "description": "List of project entries.",
+          "items": {
+            "type": "object",
+            "required": ["title", "description_bullets"],
+            "properties": {
+              "title": {
+                "type": "string",
+                "description": "Name of the project."
+              },
+              "timeframe": {
+                "type": "string",
+                "description": "Timeframe of the project. (Ongoing, Complete, etc.)"
+              },
+              "link": {
+                "type": ["object"],
+                "description": "URL link to the project",
+                "required": ["url", "text"],
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "description": "URL of the project."
+                  },
+                  "text": {
+                    "type": "string",
+                    "description": "Display text for the project link."
+                  }
+                }
+              },
+              "subtitle": {
+                "type": "string",
+                "description": "Subtitle or brief description of the project."
+              },
+              "description_bullets": {
+                "type": "array",
+                "description": "List of bullet points describing the project.",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "technologies": {
+                "type": "array",
+                "description": "List of technologies used in the project.",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "skill_sections": {
+          "type": "array",
+          "description": "List of skill sections.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "description": "Title of the skill category.",
+                "exclusiveMinimum": 0
+              },
+              "skills": {
+                "type": ["string"],
+                "description": "List of skills within the category."
+              }
+            }
+          }
+        },
+        "education": {
+          "type": "array",
+          "description": "List of education entries.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "institution": {
+                "type": "string",
+                "description": "Name of the educational institution.",
+                "exclusiveMinimum": 0
+              },
+              "degree": {
+                "type": "string",
+                "description": "Degree or qualification obtained.",
+                "exclusiveMinimum": 0
+              },
+              "location": {
+                "type": "string",
+                "description": "Location of the educational institution.",
+                "exclusiveMinimum": 0
+              },
+              "completion_date": {
+                "type": ["string", "null"],
+                "description": "End date of the education (e.g., 'Jun 2019' or null if currently enrolled)."
+              },
+              "description": {
+                "type": "string",
+                "description": "Additional details about the education entry."
+              },
+              "gpa": {
+                "type": "string",
+                "description": "GPA or academic performance details."
+              },
+              "honors": {
+                "type": "array",
+                "description": "List of honors or awards received during education.",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
