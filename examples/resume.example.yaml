@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=./resume-schema.json
+# yaml-language-server: $schema=../schemas/resume-schema.json
 template_path: template.html.j2
 document_metadata:
   title: Jane Doe's Resume
@@ -51,9 +51,13 @@ resume_data:
       timeframe: Ongoing
   skill_sections:
     - title: Languages
-      skills: Python, JavaScript
+      skills:
+        - Python
+        - JavaScript
     - title: Frameworks
-      skills: React, Django
+      skills:
+        - React
+        - Django
   education:
     - institution: University of Example
       degree: B.S. in Computer Science

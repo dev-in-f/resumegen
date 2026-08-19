@@ -43,7 +43,7 @@
             {% for skill in resume_data.skill_sections %}
             <div class="skill">
                 <h3>{{ skill.title }}</h3>
-                <p>{{ skill.skills }}</p>
+                <p>{{ skill.skills | join(', ') }}</p>
             </div>
             {% endfor %}
         </div>

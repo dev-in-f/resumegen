@@ -35,7 +35,7 @@ class PersonalInfo(BaseModel):
 
 class SkillsSubsection(BaseModel):
     title: str
-    skills: str
+    skills: list[str]
 
 
 class ExperienceEntry(BaseModel):

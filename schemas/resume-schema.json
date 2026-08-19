@@ -185,8 +185,11 @@
                 "exclusiveMinimum": 0
               },
               "skills": {
-                "type": ["string"],
-                "description": "List of skills within the category."
+                "type": ["array"],
+                "description": "List of skills within the category.",
+                "items": {
+                  "type": "string"
+                }
               }
             }
           }

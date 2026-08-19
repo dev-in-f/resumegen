@@ -94,13 +94,13 @@ class TestPersonalInfo:
 
 class TestSkillsSubsection:
     def test_valid(self):
-        s = SkillsSubsection(title="Languages", skills="Python, Go")
+        s = SkillsSubsection(title="Languages", skills=["Python", "Go"])
         assert s.title == "Languages"
-        assert s.skills == "Python, Go"
+        assert s.skills == ["Python", "Go"]
 
     def test_empty_skills_list(self):
-        s = SkillsSubsection(title="Languages", skills="")
-        assert s.skills == ""
+        s = SkillsSubsection(title="Languages", skills=[])
+        assert s.skills == []
 
     def test_missing_title_raises(self):
         with pytest.raises(ValidationError):
@@ -540,7 +540,7 @@ class TestLoadYamlConfig:
               statement: Experienced engineer.
               skill_sections:
                 - title: Languages
-                  skills: Python Go
+                  skills: ["Python", "Go"]
               experience:
                 - title: Software Engineer
                   company: Acme Corp
