@@ -8,7 +8,7 @@ from weasyprint import HTML
 
 from resumegen._core.accessibility import AccessibilityReport, scan_accessibility
 from resumegen._core.config import DocumentMetadata, ResumeData
-from resumegen._core.exceptions import PdfError
+from resumegen._core.exceptions import MetadataInjectionError
 from resumegen._core.html_rendering import (
     RenderError,
     _format_output_filename,
@@ -21,18 +21,18 @@ logger = logging.getLogger(__name__)
 def _html_to_pdf(
     html_content: str,
     base_url: Path,
-    overwrite: bool = False,
 ) -> pikepdf.Pdf:
     """Converts HTML content to a PDF using WeasyPrint and returns
-    a pikepdf.Pdf object for further manipulation."""
+    a pikepdf.Pdf object for further manipulation.
+    """
     try:
         document = HTML(string=html_content, base_url=base_url).render()
         pdf_bytes = document.write_pdf(pdf_tags=True, custom_metadata=True)
-        if pdf_bytes is None:
-            raise RenderError("PDF bytes are None.")
-        return pikepdf.Pdf.open(BytesIO(pdf_bytes), allow_overwriting_input=overwrite)
     except Exception as e:
         raise RenderError(f"Failed to convert HTML into PDF: {e}") from e
+    if pdf_bytes is None:
+        raise RenderError("PDF bytes are None.")
+    return pikepdf.Pdf.open(BytesIO(pdf_bytes))
 
 
 def render_pdf(
@@ -45,8 +45,7 @@ def render_pdf(
     scan_pdf_accessibility: bool = True,
 ) -> tuple[Path, AccessibilityReport | None]:
     # ruff: noqa: E501
-    """
-    Renders a PDF from HTML content using the specified Jinja2 template and WeasyPrint.
+    """Renders a PDF from HTML content using the specified Jinja2 template and WeasyPrint.
 
     Arguments:
         template_dir: Path to the directory containing Jinja2 templates.
@@ -56,27 +55,31 @@ def render_pdf(
         resume_data: ResumeData object containing the data to render.
         overwrite_existing: Whether to overwrite an existing PDF file.
         scan_pdf_accessibility: Whether to scan the generated PDF for accessibility issues.
+
     Returns:
         A tuple containing the path to the generated PDF and an optional AccessibilityReport.
+
     """
     html_content = _render_html_from_template(template_dir, template_name, resume_data)
     output_filename = _format_output_filename(
         filename_template, resume_data.document_metadata
     )
     output_path = output_dir / output_filename
+    if output_path.exists() and not overwrite_existing:
+        raise FileExistsError(
+            f"Output file {output_path} already exists and overwrite is disabled."
+        )
     pdf = _html_to_pdf(
         html_content,
         template_dir,
-        overwrite_existing,
     )
     _pdf_xmp_metadata_injection(pdf, resume_data.document_metadata)
     if scan_pdf_accessibility:
         report: AccessibilityReport = scan_accessibility(pdf)
         pdf.save(output_path)
         return output_path, report
-    else:
-        pdf.save(output_path)
-        return output_path, None
+    pdf.save(output_path)
+    return output_path, None
 
 
 def _pdf_xmp_metadata_injection(
@@ -109,4 +112,4 @@ def _pdf_xmp_metadata_injection(
             pdf.Root.ViewerPreferences = Dictionary(DisplayDocTitle=True)
             logger.debug("Updated PDF metadata: %s", meta)
     except Exception as e:
-        raise PdfError(f"Failed to inject metadata into PDF: {e}") from e
+        raise MetadataInjectionError(e) from e

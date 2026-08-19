@@ -53,7 +53,7 @@ class TestPdfXmpMetadataInjection:
             patch.object(
                 blank_pdf, "open_metadata", side_effect=Exception("Injection failed")
             ),
-            pytest.raises(PdfError, match="Injection failed"),
+            pytest.raises(PdfError, match="Error injecting metadata into PDF"),
         ):
             _pdf_xmp_metadata_injection(
                 blank_pdf, DocumentMetadata(title="T", author="A")
@@ -156,7 +156,7 @@ class TestRenderPdf:
             mock_html.return_value.render.return_value = mock_doc
             with pytest.raises(
                 RenderError,
-                match="Failed to convert HTML into PDF: PDF bytes are None",
+                match="PDF bytes are None",
             ):
                 render_pdf(
                     minimal_resume_data,
