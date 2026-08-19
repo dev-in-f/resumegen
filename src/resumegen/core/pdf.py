@@ -9,7 +9,11 @@ from weasyprint import HTML
 from resumegen.core.accessibility import AccessibilityReport, scan_accessibility
 from resumegen.core.config import DocumentMetadata, ResumeData
 from resumegen.core.exceptions import PdfError
-from resumegen.core.renderer import RenderError, _render_html, render_output_filename
+from resumegen.core.html_rendering import (
+    RenderError,
+    _format_output_filename,
+    _render_html,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +60,7 @@ def render_pdf(
         A tuple containing the path to the generated PDF and an optional AccessibilityReport.
     """
     html_content = _render_html(template_dir, template_name, resume_data)
-    output_filename = render_output_filename(
+    output_filename = _format_output_filename(
         filename_template, resume_data.document_metadata
     )
     output_path = output_dir / output_filename

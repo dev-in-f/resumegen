@@ -13,9 +13,10 @@ from resumegen.core.config import (
     ResumeData,
     load_yaml_to_data_model,
 )
+from resumegen.core.exceptions import PdfError, RenderError
+from resumegen.core.html_rendering import output_html
 from resumegen.core.logging import color_message, setup_logging
-from resumegen.core.pdf import PdfError, render_pdf
-from resumegen.core.renderer import RenderError, output_html
+from resumegen.core.pdf import render_pdf
 from resumegen.core.tailor import tailor_resume
 
 logger = logging.getLogger(__name__)
