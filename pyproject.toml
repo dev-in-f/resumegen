@@ -30,4 +30,9 @@ version_scheme = "pep440"
 version_provider = "uv"
 major_version_zero = true
 [dependency-groups]
-dev = ["commitizen>=4.16.3", "pre-commit>=4.6.0"]
+dev = [
+    "commitizen>=4.16.3",
+    "pre-commit>=4.6.0",
+    "pytest>=9.0.3",
+    "pytest-cov>=7.1.0",
+]
