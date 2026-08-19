@@ -1,4 +1,5 @@
 import logging
+import warnings
 from pathlib import Path
 from typing import Optional
 
@@ -79,22 +80,18 @@ class ResumeData(BaseModel):
 
 
 class DocumentConfig(BaseModel):
-    meta: DocumentMeta
-    template_dir: Path
+    document_metadata: DocumentMeta
+    template_path: Path = Path("template.html.j2")
 
-    @field_validator("template_dir")
+    @field_validator("template_path", mode="before")
     @classmethod
-    def template_must_exist(cls, v: Path) -> str:
+    def resolve_template_path(cls, v):
         path = Path(v)
-        if not path.exists():
-            raise ValueError(f"Template directory does not exist: {v}")
-        if not path.is_dir():
-            raise ValueError(f"Template path is not a directory: {v}")
-        if not (path / "template.html.j2").exists():
-            raise ValueError(
-                f"Template directory must contain a template.html.j2 file: {v}"
-            )
-        return str(path.resolve())
+        if not path.exists() or not path.is_file():
+            raise ValueError(f"Template file does not exist: {path}")
+        if not path.is_absolute():
+            path = Path(__file__).parent / path
+        return path.resolve()
 
     resume_data: ResumeData
 
@@ -112,18 +109,100 @@ class LoggingConfig(BaseModel):
     level: str = "INFO"
     file: Optional[Path] = None
 
+    @field_validator("file")
+    @classmethod
+    def resolve_log_file_path(cls, v):
+        path = Path(v)
+        if not path.parent.exists():
+            warnings.warn(
+                f"Log file directory does not exist: {path.parent}", stacklevel=2
+            )
+            return None
+        return path.resolve()
+
 
 class OutputConfig(BaseModel):
-    output_dir: Path = Path("output")
+    output_dir: Path = Path("output").resolve()
+
+    @field_validator("output_dir")
+    @classmethod
+    def resolve_output_dir(cls, v):
+        path = Path(v)
+        if not path.exists():
+            logging.info(
+                f"Output directory does not exist, creating: {path}", stacklevel=2
+            )
+            path.mkdir(parents=True, exist_ok=True)
+        elif not path.is_dir():
+            warnings.warn(
+                f"Output path exists but is not a directory: {path}"
+                " Using default directory 'output'",
+                stacklevel=2,
+            )
+            output_dir = Path("output")
+            if not output_dir.exists():
+                logging.info(
+                    f"Default output directory does not exist, creating: {output_dir}",
+                )
+                output_dir.mkdir(parents=True, exist_ok=True)
+            return output_dir.resolve()
+        return path.resolve()
+
     output_filename: str = "{name}_resume_{date}.pdf"
     overwrite: bool = False
 
 
 class AppConfig(BaseModel):
-    logging_config: LoggingConfig
-    output_config: OutputConfig
-    template_dir: Path = Path("templates")
-    data_file: Path = Path("resume_data.yaml")  # prefer set by CLI arg
+    logging_config: LoggingConfig = LoggingConfig()
+    output_config: OutputConfig = OutputConfig()
+    template_dir: Path = Path("templates").resolve()
+
+    @field_validator("template_dir")
+    @classmethod
+    def resolve_template_dir(cls, v):
+        path = Path(v)
+        if not path.exists():
+            warnings.warn(
+                f"Template directory does not exist, creating: {path}", stacklevel=2
+            )
+            path.mkdir(parents=True, exist_ok=True)
+        elif not path.is_dir():
+            warnings.warn(
+                f"Template path exists but is not a directory: {path}. Using default",
+                stacklevel=2,
+            )
+            default_dir = Path("templates")
+            if not default_dir.exists():
+                logging.info(
+                    (
+                        "Default template directory does"
+                        f" not exist, creating: {default_dir}"
+                    ),
+                )
+                default_dir.mkdir(parents=True, exist_ok=True)
+            return default_dir.resolve()
+        if not path.is_absolute():
+            path = Path(__file__).parent / path
+        return path.resolve()
+
+    data_file: Path = Path("resume_data.yaml").resolve()  # prefer set by CLI arg
+
+    @field_validator("data_file")
+    @classmethod
+    def resolve_data_file_path(cls, v):
+        path = Path(v)
+        if not path.exists() or not path.is_file():
+            warnings.warn(
+                (
+                    f"Data file does not exist: {path}. "
+                    "Resume data must be provided via CLI"
+                ),
+                stacklevel=2,
+            )
+            return None
+        if not path.is_absolute():
+            path = Path(__file__).parent / path
+        return path.resolve()
 
 
 def load_yaml_config(file_path: Path, config_type: type[BaseModel]) -> BaseModel:
@@ -131,4 +210,4 @@ def load_yaml_config(file_path: Path, config_type: type[BaseModel]) -> BaseModel
     with open(file_path) as f:
         data = yaml.safe_load(f)
         logging.debug(f"Loaded YAML data: {data}")
-    return DocumentConfig(**data)
+    return config_type(**data)
