@@ -11,9 +11,13 @@ from resumegen.config import (
     ResumeData,
     load_yaml_to_data_model,
 )
+from resumegen.logging import setup_logging
 from resumegen.pdf import render_pdf
 from resumegen.renderer import output_html
 from resumegen.tailor import score_master_data, tailor_resume
+
+logger = logging.getLogger(__name__)
+setup_logging(logger)
 
 
 def common_options(f) -> click.Command:
@@ -50,18 +54,16 @@ def common_options(f) -> click.Command:
     return f
 
 
-def setup_logging(level: str, log_file: Path | None = None) -> None:
-    mapping = logging.getLevelNamesMapping()
-    numeric_level = mapping.get(level.upper(), logging.INFO)
-    handlers: list[logging.Handler] = [logging.StreamHandler()]
+def _override_logging_options(log_level: str | None, log_file: Path | None):
+    logger = logging.getLogger(__name__)
+    if log_level:
+        logger.setLevel(log_level)
     if log_file:
-        handlers.append(logging.FileHandler(log_file))
-    logging.basicConfig(
-        level=numeric_level,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-        force=True,
-        handlers=handlers,
-    )
+        for handler in list(logger.handlers):
+            if isinstance(handler, logging.FileHandler):
+                logger.removeHandler(handler)
+                handler.close()
+        logger.addHandler(logging.FileHandler(log_file))
 
 
 @click.command()
@@ -118,20 +120,14 @@ def render(
     """
     data_file reads from stdin or takes a file path
     """
+    _override_logging_options(log_level, log_file)
     try:
         config_data = load_yaml_to_data_model(config_path, Config)
-        env_log_file = os.getenv("RESUMEGEN_LOG_FILE")
-        log_file_from_env = Path(env_log_file) if env_log_file else None
-
-        setup_logging(
-            log_level or os.getenv("RESUMEGEN_LOG_LEVEL", "INFO"),
-            log_file or log_file_from_env,
-        )
-        logging.info("Configuration loaded successfully.")
-        logging.debug(f"Configuration data: {config_data}")
+        logger.info("Configuration loaded successfully.")
+        logger.debug(f"Configuration data: {config_data}")
         resume_data = load_yaml_to_data_model(data_file, ResumeData)
-        logging.info("Resume data loaded successfully.")
-        logging.debug(f"Resume data loaded: {resume_data}")
+        logger.info("Resume data loaded successfully.")
+        logger.debug(f"Resume data loaded: {resume_data}")
         resume_metadata = resume_data.document_metadata
         document_metadata = DocumentMetadata(
             author=document_author or resume_metadata.author,
@@ -141,14 +137,14 @@ def render(
             keywords=resume_metadata.keywords,
         )
 
-        logging.debug(f"Final document metadata: {document_metadata}")
+        logger.debug(f"Final document metadata: {document_metadata}")
         working_template_dir = template_dir or config_data.template_dir
         working_template_name = template_name or config_data.template_name
         working_output_dir = output_dir or config_data.output_dir
         working_output_filename = output_template or config_data.output_filename
 
         if html_only:
-            logging.info("Rendering HTML only...")
+            logger.info("Rendering HTML only...")
             output = output_html(
                 working_template_dir,
                 working_template_name,
@@ -156,9 +152,9 @@ def render(
                 working_output_filename,
                 working_output_dir,
             )
-            logging.info(f"HTML generated at: {output.resolve()}")
+            logger.info(f"HTML generated at: {output.resolve()}")
         else:
-            logging.info("Rendering PDF...")
+            logger.info("Rendering PDF...")
             output, report = render_pdf(
                 working_template_dir,
                 working_template_name,
@@ -167,13 +163,13 @@ def render(
                 resume_data,
                 overwrite_existing or config_data.overwrite_existing,
             )
-            logging.info(f"PDF generated at: {output.resolve()}")
+            logger.info(f"PDF generated at: {output.resolve()}")
             if report:
-                logging.info("Accessibility report:")
+                logger.info("Accessibility report:")
                 report.print()
 
     except Exception as e:
-        logging.exception(f"Failed to generate resume: {e}")
+        logger.exception(f"Failed to generate resume: {e}")
         raise click.exceptions.Exit(code=1) from e
 
 
@@ -259,18 +255,13 @@ def tailor(
     config_path: Path,
     output_filename: str | None = None,
 ) -> str | Path:
+    _override_logging_options(log_level, log_file)
     try:
-        env_log_file = os.getenv("RESUMEGEN_LOG_FILE")
-        log_file_from_env = Path(env_log_file) if env_log_file else None
-        setup_logging(
-            log_level or os.getenv("RESUMEGEN_LOG_LEVEL", "INFO"),
-            log_file or log_file_from_env if log_file_from_env else None,
-        )
         app_config = load_yaml_to_data_model(config_path, Config)
-        logging.debug("Configuration loaded successfully.")
+        logger.debug("Configuration loaded successfully.")
         tailor_model = model or app_config.model or os.getenv("RESUMEGEN_MODEL", "")
         if score:
-            logging.info("Scoring master data against job description...")
+            logger.info("Scoring master data against job description...")
             score_master_data()
         return tailor_resume(
             master_data_file,
@@ -285,7 +276,7 @@ def tailor(
         )
 
     except Exception as e:
-        logging.exception(f"Tailoring failed with the following error: {e}")
+        logger.exception(f"Tailoring failed with the following error: {e}")
         raise click.exceptions.Exit(code=1) from e
 
 
