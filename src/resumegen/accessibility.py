@@ -56,15 +56,6 @@ def _check_metadata(pdf: pikepdf.Pdf, report: AccessibilityReport) -> None:
                     message="The PDF is missing a title in the metadata (dc:title).",
                 )
             )
-        if not meta.get("dc:language"):
-            report.issues.append(
-                AccessibilityIssue(
-                    severity=Severity.WARNING,
-                    rule="MissingLanguage",
-                    message="The PDF is missing a language "
-                    "declaration in the metadata (dc:language).",
-                )
-            )
         if not meta.get("pdfuaid:part"):
             report.issues.append(
                 AccessibilityIssue(
@@ -97,6 +88,16 @@ def _check_language(pdf: pikepdf.Pdf, report: AccessibilityReport) -> None:
                 message="The PDF root does not have a language declaration (/Lang).",
             )
         )
+    with pdf.open_metadata() as meta:
+        if not meta.get("dc:language"):
+            report.issues.append(
+                AccessibilityIssue(
+                    severity=Severity.WARNING,
+                    rule="MissingLanguage",
+                    message="The PDF is missing a language "
+                    "declaration in the metadata (dc:language).",
+                )
+            )
 
 
 def _check_struct_tree(pdf: pikepdf.Pdf, report: AccessibilityReport) -> None:
@@ -114,7 +115,7 @@ def _check_struct_tree(pdf: pikepdf.Pdf, report: AccessibilityReport) -> None:
 
 
 def _walk_struct_tree(node: pikepdf.Object, report: AccessibilityReport) -> None:
-    tag_type = str(node.get("/S", "")).lstrip
+    tag_type = str(node.get("/S", "")).lstrip("/")
 
     if tag_type == "Figure":
         alt = node.get("/Alt")
