@@ -8,14 +8,14 @@ from mcp.server.fastmcp import Context, FastMCP
 from mcp.server.fastmcp.prompts import base
 from pydantic import BaseModel
 
-from resumegen.core.accessibility import AccessibilityReport, scan_accessibility
-from resumegen.core.config import (
+from resumegen._core.accessibility import AccessibilityReport, scan_accessibility
+from resumegen._core.config import (
     RESUMEGEN_DATA_DIR,
     Config,
     ResumeData,
     load_yaml_to_data_model,
 )
-from resumegen.core.pdf import render_pdf
+from resumegen._core.pdf import render_pdf
 
 mcp = FastMCP("resumegen")
 
@@ -93,7 +93,9 @@ async def generate_resume(resume_data_path: str, ctx: Context) -> str:
 
     return (
         f"Resume output to: {out}\nAccessibility report:"
-        f"\n{report.get_report() if report else 'No accessibility issues found.'}"
+        f"\n{
+            report.get_report_string() if report else 'No accessibility issues found.'
+        }"
     )
 
 
@@ -118,9 +120,10 @@ def validate_resume_yaml(yaml_file: str) -> str:
     """
     try:
         load_yaml_to_data_model(Path(yaml_file), ResumeData)
-        return "YAML is valid."
     except (ValueError, yaml.YAMLError, OSError) as e:
         return f"Validation failed: {e}"
+    else:
+        return "YAML is valid."
 
 
 @mcp.tool()
@@ -132,8 +135,7 @@ def check_accessibility(pdf_path: str) -> str:
         report: AccessibilityReport = scan_accessibility(pdf)
     if not report.issues:
         return "No accessibility issues found."
-    else:
-        return report.get_report()
+    return report.get_report_string()
 
 
 @mcp.resource("resumegen://examples/{name}")
@@ -223,10 +225,11 @@ def list_files() -> str:
     and generated PDFs are in the 'pdfs' subdirectory.
     You can view the files there.
     """
-    files = []
-    for path in RESUMEGEN_DATA_DIR.rglob("*"):
-        if path.is_file():
-            files.append(str(path.relative_to(RESUMEGEN_DATA_DIR)))
+    files = (
+        str(path.relative_to(RESUMEGEN_DATA_DIR))
+        for path in RESUMEGEN_DATA_DIR.rglob("*")
+        if path.is_file()
+    )
     return "\n".join(files)
 
 
