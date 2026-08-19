@@ -4,21 +4,26 @@ from pathlib import Path
 
 import click
 import litellm
+import pikepdf
 from pydantic import ValidationError
 
+from resumegen import (
+    Config,
+    DocumentMetadata,
+    PdfError,
+    RenderError,
+    ResumeData,
+    render_html,
+    render_pdf,
+    scan_accessibility,
+    tailor_resume,
+)
 from resumegen._bootstrap import bootstrap
 from resumegen._core.config import (
     RESUMEGEN_DEFAULT_CONFIG_PATH,
-    Config,
-    DocumentMetadata,
-    ResumeData,
     load_yaml_to_data_model,
 )
-from resumegen._core.exceptions import PdfError, RenderError
-from resumegen._core.html_rendering import render_html
 from resumegen._core.logging import color_message, setup_logging
-from resumegen._core.pdf import render_pdf
-from resumegen._core.tailor import tailor_resume
 
 bootstrap()
 logger = logging.getLogger(__name__)
@@ -182,7 +187,7 @@ def render(
             )
             if report:
                 click.echo("🦾  Accessibility report:")
-                click.echo(report.get_report())
+                click.echo(report.get_report_string())
 
     except ValidationError as e:
         logger.error(f"Data model validation failed: {e}")
@@ -323,7 +328,31 @@ def tailor(
         raise click.exceptions.Exit(code=1) from e
 
 
-app = click.Group(commands={"render": render, "tailor": tailor})
+@click.command()
+@click.argument(
+    "pdf_file",
+    type=click.Path(path_type=Path, dir_okay=False, exists=True),
+)
+def scan_pdf(pdf_file):
+    """
+    Scan a PDF for accessibility issues.
+    """
+    try:
+        click.echo(
+            color_message("🦾  Scanning PDF for accessibility issues...", "cyan")
+        )
+        with pikepdf.open(pdf_file) as pdf:
+            report = scan_accessibility(pdf)
+        click.echo(report.get_report_string())
+    except PdfError as e:
+        logger.error(f"PDF accessibility scan failed: {e}")
+        raise click.exceptions.Exit(code=1) from e
+    except Exception as e:
+        logger.exception(f"Unexpected error during PDF scan: {e}")
+        raise click.exceptions.Exit(code=1) from e
+
+
+app = click.Group(commands={"render": render, "tailor": tailor, "scan-pdf": scan_pdf})
 
 if __name__ == "__main__":  # pragma no cover
     app()

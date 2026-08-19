@@ -25,17 +25,23 @@ class AccessibilityReport(BaseModel):
     def has_errors(self) -> bool:
         return any(i.severity == Severity.ERROR for i in self.issues)
 
-    def get_report(self) -> str:
+    def get_report_string(self) -> str:
         if not self.issues:
             return (
                 "No accessibility issues found. "
                 "The PDF is compliant with basic accessibility standards."
             )
         report_lines = []
+        report_lines.append(
+            f"\x1b[38;1mAccessibility Report: {len(self.issues)} issue(s) found.\x1b[0m"
+        )
         for issue in self.issues:
-            report_lines.append(
-                f"{issue.severity.value.upper()}: {issue.rule} - {issue.message}"
-            )
+            msg = ""
+            if issue.severity == Severity.ERROR:
+                msg += f"\x1b[31;20m{issue.severity.value.upper()}\x1b[0m: "
+            if issue.severity == Severity.WARNING:
+                msg += f"\x1b[33;20m{issue.severity.value.upper()}\x1b[0m: "
+            report_lines.append(f"{msg}{issue.rule} - {issue.message}")
         return "\n".join(report_lines)
 
     def to_json(self) -> str:

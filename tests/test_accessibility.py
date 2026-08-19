@@ -72,13 +72,13 @@ class TestAccessibilityReport:
 
     def test_get_report(self, example_issues):
         report = AccessibilityReport(issues=example_issues)
-        report_str = report.get_report()
-        assert "WARNING: TestRule1 - This is a warning." in report_str
-        assert "ERROR: TestRule2 - This is an error." in report_str
+        report_str = report.get_report_string()
+        assert "WARNING\x1b[0m: TestRule1 - This is a warning." in report_str
+        assert "ERROR\x1b[0m: TestRule2 - This is an error." in report_str
 
     def test_get_report_no_issues(self):
         report = AccessibilityReport(issues=[])
-        report_str = report.get_report()
+        report_str = report.get_report_string()
         assert "No accessibility issues found." in report_str
 
 

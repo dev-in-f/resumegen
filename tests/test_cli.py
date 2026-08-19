@@ -227,7 +227,7 @@ class TestRenderCommand:
         self, data_file, config_file, output_dir
     ):
         class DummyReport:
-            def get_report(self):
+            def get_report_string(self):
                 return "Accessibility report content"
 
         with patch(
