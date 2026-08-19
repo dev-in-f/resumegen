@@ -369,5 +369,6 @@ class TestLoadYamlConfig:
         template_name: "custom_template.html.j2"
         """
         config_path = self._write_yaml(tmp_path, yaml_content)
-        with pytest.raises(ValueError):
+
+        with pytest.raises(ValidationError):
             load_yaml_to_data_model(config_path, Config)

@@ -1,6 +1,5 @@
 import logging
 import os
-import warnings
 from importlib import resources
 from pathlib import Path
 from typing import Optional
@@ -9,6 +8,7 @@ import yaml
 from platformdirs import user_config_path, user_data_path
 from pydantic import BaseModel, Field, field_validator
 
+logger = logging.getLogger(__name__)
 RESUMEGEN_DATA_DIR = Path(
     os.getenv("RESUMEGEN_DATA_DIR", user_data_path("resumegen", ensure_exists=True))
 )
@@ -18,6 +18,7 @@ RESUMEGEN_DEFAULT_CONFIG_PATH = Path(
         user_config_path("resumegen", ensure_exists=True) / "config.yaml",
     )
 )
+
 # ruff: noqa: UP045
 
 
@@ -167,22 +168,17 @@ class Config(BaseModel):
     def resolve_template_dir(cls, v):
         path = Path(v)
         if not path.exists():
-            warnings.warn(
-                f"Template directory does not exist, creating: {path}", stacklevel=2
-            )
+            logger.warning("Template directory does not exist, creating: %s", path)
             path.mkdir(parents=True, exist_ok=True)
         elif not path.is_dir():
-            warnings.warn(
-                f"Template path exists but is not a directory: {path}. Using default",
-                stacklevel=2,
+            logger.warning(
+                "Template path exists but is not a directory: %s. Using default", path
             )
             default_dir = Path(str(resources.files("resumegen") / "templates"))
             if not default_dir.exists():
-                logging.info(
-                    (
-                        "Default template directory does"
-                        f" not exist, creating: {default_dir}"
-                    ),
+                logger.info(
+                    "Default template directory does not exist, creating: %s",
+                    default_dir,
                 )
                 default_dir.mkdir(parents=True, exist_ok=True)
             return default_dir.resolve()
@@ -193,20 +189,19 @@ class Config(BaseModel):
     def resolve_output_dir(cls, v):
         path = Path(v)
         if not path.exists():
-            logging.info(
-                f"Output directory does not exist, creating: {path}", stacklevel=2
-            )
+            logger.info("Output directory does not exist, creating: %s", path)
             path.mkdir(parents=True, exist_ok=True)
         elif not path.is_dir():
-            warnings.warn(
-                f"Output path exists but is not a directory: {path}"
-                f" Using default directory '{RESUMEGEN_DATA_DIR / 'output'}'",
-                stacklevel=2,
+            logger.warning(
+                "Output path exists but is not a directory: %s.",
+                path,
             )
             output_dir = RESUMEGEN_DATA_DIR / "output"
+            logger.info("Using default output directory instead: %s", output_dir)
             if not output_dir.exists():
-                logging.info(
-                    f"Default output directory does not exist, creating: {output_dir}",
+                logger.info(
+                    "Default output directory does not exist, creating: %s",
+                    output_dir,
                 )
                 output_dir.mkdir(parents=True, exist_ok=True)
             return output_dir.resolve()
@@ -221,9 +216,16 @@ class Config(BaseModel):
 
 
 def load_yaml_to_data_model[T: BaseModel](file_path: Path, model: type[T]) -> T:
+    """
+    Load a YAML file and validate it against a Pydantic data model.
+    Arguments:
+        file_path: Path to the YAML file.
+        model: Pydantic data model class to validate against.
+    Returns:
+        An instance of the data model populated with the data from the YAML file.
+    Raises:
+        ValidationError: If the data does not conform to the model.
+    """
     with open(file_path) as f:
         data = yaml.safe_load(f)
-    try:
-        return model(**data)
-    except Exception as e:
-        raise ValueError(f"Failed to load data into model {model.__name__}: {e}") from e
+        return model.model_validate(data)

@@ -3,6 +3,8 @@ from enum import Enum
 import pikepdf
 from pydantic import BaseModel, computed_field
 
+from resumegen.exceptions import PdfError
+
 
 class Severity(Enum):
     WARNING = "warning"
@@ -42,10 +44,13 @@ class AccessibilityReport(BaseModel):
 
 def scan_accessibility(pdf: pikepdf.Pdf) -> AccessibilityReport:
     report = AccessibilityReport()
-    _check_metadata(pdf, report)
-    _check_mark_info(pdf, report)
-    _check_language(pdf, report)
-    _check_struct_tree(pdf, report)
+    try:
+        _check_metadata(pdf, report)
+        _check_mark_info(pdf, report)
+        _check_language(pdf, report)
+        _check_struct_tree(pdf, report)
+    except Exception as e:
+        raise PdfError(f"Error scanning PDF for accessibility: {e}") from e
     return report
 
 

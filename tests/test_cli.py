@@ -1,10 +1,11 @@
 import logging
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from click.testing import CliRunner
 
 from resumegen.cli import _override_logging_options, app
+from resumegen.exceptions import PdfError, RenderError
 
 runner = CliRunner()
 
@@ -50,7 +51,7 @@ def config_file(tmp_path):
     return p
 
 
-class TestMainCommand:
+class TestRenderCommand:
     @patch("resumegen.cli.render_pdf")
     def test_renders_pdf_by_default(
         self, mock_render, data_file, config_file, output_dir
@@ -207,26 +208,6 @@ class TestMainCommand:
         assert call_args[1] == "custom.html.j2"
 
     @patch("resumegen.cli.render_pdf")
-    def test_accessibility_report_printed_when_present(
-        self, mock_render, data_file, config_file, output_dir
-    ):
-        mock_report = MagicMock()
-        mock_render.return_value = (output_dir / "resume.pdf", mock_report)
-        result = runner.invoke(
-            app,
-            [
-                "render",
-                str(data_file),
-                "--config",
-                str(config_file),
-                "--output-dir",
-                str(output_dir),
-            ],
-        )
-        assert result.exit_code == 0
-        mock_report.print.assert_called_once()
-
-    @patch("resumegen.cli.render_pdf")
     def test_no_report_print_when_report_is_none(
         self, mock_render, data_file, config_file, output_dir
     ):
@@ -243,6 +224,31 @@ class TestMainCommand:
             ],
         )
         assert result.exit_code == 0
+
+    def test_report_printed_when_report_is_not_none(
+        self, data_file, config_file, output_dir
+    ):
+        class DummyReport:
+            def get_report(self):
+                return "Accessibility report content"
+
+        with patch(
+            "resumegen.cli.render_pdf",
+            return_value=(output_dir / "resume.pdf", DummyReport()),
+        ):
+            result = runner.invoke(
+                app,
+                [
+                    "render",
+                    str(data_file),
+                    "--config",
+                    str(config_file),
+                    "--output-dir",
+                    str(output_dir),
+                ],
+            )
+            assert result.exit_code == 0
+            assert "Accessibility report:" in result.output
 
     def test_invalid_data_file_exits_with_code_1(
         self, tmp_path, config_file, output_dir
@@ -283,6 +289,65 @@ class TestMainCommand:
         assert result.exit_code == 0
         call_args = mock_render.call_args.args
         assert call_args[2] == "my_{author}.pdf"
+
+    def test_validation_error_exits_with_code_1(self, tmp_path, config_file):
+        bad_data = tmp_path / "bad_data.yaml"
+        bad_data.write_text("invalid_field: true\n")
+        result = runner.invoke(
+            app,
+            [
+                "render",
+                str(bad_data),
+                "--config",
+                str(config_file),
+            ],
+        )
+        assert result.exit_code == 1
+        assert "Data model validation failed" in result.output
+
+    def test_pdf_error_exits_with_code_1(self, tmp_path, config_file, data_file):
+        with patch("resumegen.cli.render_pdf", side_effect=PdfError("PDF error")):
+            result = runner.invoke(
+                app,
+                [
+                    "render",
+                    str(data_file),
+                    "--config",
+                    str(config_file),
+                ],
+            )
+            assert result.exit_code == 1
+            assert "PDF manipulation failed" in result.output
+
+    def test_render_error_exits_with_code_1(self, tmp_path, config_file, data_file):
+        with patch("resumegen.cli.render_pdf", side_effect=RenderError("Render error")):
+            result = runner.invoke(
+                app,
+                [
+                    "render",
+                    str(data_file),
+                    "--config",
+                    str(config_file),
+                ],
+            )
+            assert result.exit_code == 1
+            assert "Rendering failed" in result.output
+
+    def test_unexpected_exception_exits_with_code_1(
+        self, tmp_path, config_file, data_file
+    ):
+        with patch("resumegen.cli.render_pdf", side_effect=RuntimeError("Unexpected")):
+            result = runner.invoke(
+                app,
+                [
+                    "render",
+                    str(data_file),
+                    "--config",
+                    str(config_file),
+                ],
+            )
+            assert result.exit_code == 1
+            assert "Unexpected error" in result.output
 
 
 class TestTailorCommand:

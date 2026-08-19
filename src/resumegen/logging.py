@@ -44,3 +44,18 @@ def setup_logging(logger: logging.Logger):
     ch.setLevel(os.getenv("RESUMEGEN_LOG_LEVEL", logging.INFO))
     ch.setFormatter(ColorLogFormatter())
     logger.addHandler(ch)
+
+
+def color_message(message: str, color: str) -> str:
+    color_codes = {
+        "grey": "\x1b[38;20m",
+        "yellow": "\x1b[33;20m",
+        "red": "\x1b[31;20m",
+        "green": "\x1b[32;20m",
+        "blue": "\x1b[34;20m",
+        "cyan": "\x1b[36;20m",
+        "magenta": "\x1b[35;20m",
+        "white": "\x1b[37;20m",
+    }
+    reset_code = "\x1b[0m"
+    return f"{color_codes.get(color, '')}{message}{reset_code}"

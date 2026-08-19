@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 
 import click
+from pydantic import ValidationError
 
 from resumegen.config import (
     RESUMEGEN_DEFAULT_CONFIG_PATH,
@@ -11,9 +12,9 @@ from resumegen.config import (
     ResumeData,
     load_yaml_to_data_model,
 )
-from resumegen.logging import setup_logging
-from resumegen.pdf import render_pdf
-from resumegen.renderer import output_html
+from resumegen.logging import color_message, setup_logging
+from resumegen.pdf import PdfError, render_pdf
+from resumegen.renderer import RenderError, output_html
 from resumegen.tailor import score_master_data, tailor_resume
 
 logger = logging.getLogger(__name__)
@@ -37,7 +38,7 @@ def common_options(f) -> click.Command:
     f = click.option(
         "--output-dir",
         default=None,
-        type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
+        type=click.Path(exists=False, file_okay=False, dir_okay=True, path_type=Path),
         help="Directory to save the generated data.",
     )(f)
     f = click.option(
@@ -45,7 +46,6 @@ def common_options(f) -> click.Command:
         "--config",
         "config_path",
         default=RESUMEGEN_DEFAULT_CONFIG_PATH,
-        envvar="RESUMEGEN_DEFAULT_CONFIG_PATH",
         type=click.Path(exists=True, dir_okay=False, path_type=Path),
         show_default=False,
         help="Path to the configuration file. "
@@ -123,28 +123,32 @@ def render(
     _override_logging_options(log_level, log_file)
     try:
         config_data = load_yaml_to_data_model(config_path, Config)
-        logger.info("Configuration loaded successfully.")
-        logger.debug(f"Configuration data: {config_data}")
+
+        click.echo(color_message("⚙️  Configuration loaded successfully!", "green"))
+        logger.debug("Configuration data: %s", config_data)
+
         resume_data = load_yaml_to_data_model(data_file, ResumeData)
-        logger.info("Resume data loaded successfully.")
-        logger.debug(f"Resume data loaded: {resume_data}")
-        resume_metadata = resume_data.document_metadata
+
+        click.echo(color_message("🗄️  Resume data loaded successfully!", "green"))
+        logger.debug("Resume data loaded: %s", resume_data)
+
         document_metadata = DocumentMetadata(
-            author=document_author or resume_metadata.author,
-            title=document_title or resume_metadata.title,
-            language=resume_metadata.language,
-            description=resume_metadata.description,
-            keywords=resume_metadata.keywords,
+            author=document_author or resume_data.document_metadata.author,
+            title=document_title or resume_data.document_metadata.title,
+            language=resume_data.document_metadata.language,
+            description=resume_data.document_metadata.description,
+            keywords=resume_data.document_metadata.keywords,
         )
 
-        logger.debug(f"Final document metadata: {document_metadata}")
+        logger.debug("Document Metadata object: %s", document_metadata)
+
         working_template_dir = template_dir or config_data.template_dir
         working_template_name = template_name or config_data.template_name
         working_output_dir = output_dir or config_data.output_dir
         working_output_filename = output_template or config_data.output_filename
 
         if html_only:
-            logger.info("Rendering HTML only...")
+            click.echo(color_message("🖨️  Rendering HTML only...", "cyan"))
             output = output_html(
                 working_template_dir,
                 working_template_name,
@@ -152,9 +156,11 @@ def render(
                 working_output_filename,
                 working_output_dir,
             )
-            logger.info(f"HTML generated at: {output.resolve()}")
+            logger.info(
+                color_message(f"👻  HTML generated at: {output.resolve()}", "green")
+            )
         else:
-            logger.info("Rendering PDF...")
+            click.echo(color_message("🖨️  Rendering PDF...", "cyan"))
             output, report = render_pdf(
                 working_template_dir,
                 working_template_name,
@@ -163,13 +169,27 @@ def render(
                 resume_data,
                 overwrite_existing or config_data.overwrite_existing,
             )
-            logger.info(f"PDF generated at: {output.resolve()}")
+            click.echo(
+                color_message(f"👻  PDF generated at: {output.resolve()}", "green")
+            )
             if report:
-                logger.info("Accessibility report:")
-                report.print()
+                click.echo("🦾  Accessibility report:")
+                click.echo(report.get_report())
 
+    except ValidationError as e:
+        logger.error(f"Data model validation failed: {e}")
+        logger.error(
+            "Ensure your data and configuration files match the expected schema."
+        )
+        raise click.exceptions.Exit(code=1) from e
+    except RenderError as e:
+        logger.error("Rendering failed: %s", e)
+        raise click.exceptions.Exit(code=1) from e
+    except PdfError as e:
+        logger.error("PDF manipulation failed: %s", e)
+        raise click.exceptions.Exit(code=1) from e
     except Exception as e:
-        logger.exception(f"Failed to generate resume: {e}")
+        logger.exception(f"Unexpected error: {e}")
         raise click.exceptions.Exit(code=1) from e
 
 

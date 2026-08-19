@@ -9,6 +9,7 @@ from resumegen.accessibility import (
     _walk_struct_tree,
     scan_accessibility,
 )
+from resumegen.exceptions import PdfError
 
 
 @pytest.fixture
@@ -154,6 +155,13 @@ class TestScanAccessibility:
             report.issues[0].message
             == "The PDF does not have a structural tree (/StructTreeRoot)."
         )
+
+    def test_scan_accessibility_raises_exception_on_invalid_pdf(self, tmp_path):
+        invalid_pdf_path = tmp_path / "invalid.pdf"
+        invalid_pdf_path.write_text("This is not a valid PDF file.")
+
+        with pytest.raises(PdfError):
+            scan_accessibility(invalid_pdf_path)
 
 
 class TestWalkStructTree:

@@ -4,12 +4,13 @@ import pikepdf
 import pytest
 
 from resumegen.config import Config, DocumentMetadata
-from resumegen.pdf import pdf_xmp_metadata_injection, render_pdf
+from resumegen.exceptions import PdfError, RenderError
+from resumegen.pdf import _pdf_xmp_metadata_injection, render_pdf
 
 
 class TestPdfXmpMetadataInjection:
     def test_sets_metadata(self, blank_pdf, minimal_document_metadata):
-        pdf_xmp_metadata_injection(blank_pdf, minimal_document_metadata)
+        _pdf_xmp_metadata_injection(blank_pdf, minimal_document_metadata)
         with blank_pdf.open_metadata() as meta:
             assert meta["dc:title"] == minimal_document_metadata.title
             assert meta["dc:language"] == minimal_document_metadata.language
@@ -21,30 +22,42 @@ class TestPdfXmpMetadataInjection:
             assert meta["dc:creator"] == [minimal_document_metadata.author]
 
     def test_sets_root_data(self, blank_pdf, minimal_document_metadata):
-        pdf_xmp_metadata_injection(blank_pdf, minimal_document_metadata)
+        _pdf_xmp_metadata_injection(blank_pdf, minimal_document_metadata)
         assert str(blank_pdf.Root.lang) == minimal_document_metadata.language
         assert bool(blank_pdf.Root.MarkInfo.Marked)
         assert bool(blank_pdf.Root.ViewerPreferences.DisplayDocTitle)
 
     def test_empty_keywords_produces_empty_string(self, blank_pdf):
         meta = DocumentMetadata(title="T", author="A", keywords=[])
-        pdf_xmp_metadata_injection(blank_pdf, meta)
+        _pdf_xmp_metadata_injection(blank_pdf, meta)
         with blank_pdf.open_metadata() as xmp:
             assert xmp["dc:subject"] == ""
             assert xmp["pdf:keywords"] == ""
 
     def test_single_keyword(self, blank_pdf):
         meta = DocumentMetadata(title="T", author="A", keywords=["python"])
-        pdf_xmp_metadata_injection(blank_pdf, meta)
+        _pdf_xmp_metadata_injection(blank_pdf, meta)
         with blank_pdf.open_metadata() as xmp:
             assert xmp["dc:subject"] == "python"
             assert xmp["pdf:keywords"] == "python"
 
     def test_multiple_keywords_joined_with_comma(self, blank_pdf):
         meta = DocumentMetadata(title="T", author="A", keywords=["a", "b", "c"])
-        pdf_xmp_metadata_injection(blank_pdf, meta)
+        _pdf_xmp_metadata_injection(blank_pdf, meta)
         with blank_pdf.open_metadata() as xmp:
             assert xmp["dc:subject"] == "a, b, c"
+
+    def test_raises_exception_if_metadata_injection_fails(self, blank_pdf):
+        # Simulate a failure in metadata injection by patching the open_metadata method
+        with (
+            patch.object(
+                blank_pdf, "open_metadata", side_effect=Exception("Injection failed")
+            ),
+            pytest.raises(PdfError, match="Injection failed"),
+        ):
+            _pdf_xmp_metadata_injection(
+                blank_pdf, DocumentMetadata(title="T", author="A")
+            )
 
 
 class TestRenderPdf:
@@ -141,7 +154,10 @@ class TestRenderPdf:
         mock_doc.write_pdf.return_value = None
         with patch("resumegen.pdf.HTML") as mock_html:
             mock_html.return_value.render.return_value = mock_doc
-            with pytest.raises(ValueError, match="Failed to generate PDF"):
+            with pytest.raises(
+                RenderError,
+                match="Failed to convert HTML into PDF: PDF bytes are None",
+            ):
                 render_pdf(
                     self.config.template_dir,
                     self.config.template_name,
@@ -156,7 +172,7 @@ class TestRenderPdf:
         mock_doc.write_pdf.return_value = None
         with patch("resumegen.pdf.HTML") as mock_html:
             mock_html.return_value.render.return_value = mock_doc
-            with pytest.raises(ValueError):
+            with pytest.raises(RenderError):
                 output_path, _ = render_pdf(
                     self.config.template_dir,
                     self.config.template_name,
@@ -167,21 +183,3 @@ class TestRenderPdf:
                 )
 
         assert list(self.config.output_dir.iterdir()) == []
-
-    # def test_passes_base_url_to_weasyprint(self, minimal_resume_data):
-    #     buf = BytesIO()
-    #     pikepdf.new().save(buf)
-    #     mock_doc = MagicMock()
-    #     mock_doc.write_pdf.return_value = buf.getvalue()
-    #     with patch("resumegen.pdf.HTML") as mock_html:
-    #         mock_html.return_value.render.return_value = mock_doc
-    #         render_pdf(
-    #             self.config.template_dir,
-    #             self.config.template_name,
-    #             self.config.output_filename,
-    #             self.config.output_dir,
-    #             minimal_resume_data,
-    #             scan_pdf_accessibility=False,
-    #         )
-    #     call_kwargs = mock_html.call_args.kwargs
-    #     assert call_kwargs["base_url"] == str(Path(pdf_module.__file__).parent)

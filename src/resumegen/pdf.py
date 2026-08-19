@@ -1,5 +1,4 @@
 import logging
-from importlib import resources
 from io import BytesIO
 from pathlib import Path
 
@@ -9,7 +8,10 @@ from weasyprint import HTML
 
 from resumegen.accessibility import AccessibilityReport, scan_accessibility
 from resumegen.config import DocumentMetadata, ResumeData
-from resumegen.renderer import render_html, render_output_filename
+from resumegen.exceptions import PdfError
+from resumegen.renderer import RenderError, _render_html, render_output_filename
+
+logger = logging.getLogger(__name__)
 
 
 def _html_to_pdf(
@@ -17,11 +19,16 @@ def _html_to_pdf(
     base_url: Path,
     overwrite: bool = False,
 ) -> pikepdf.Pdf:
-    document = HTML(string=html_content, base_url=base_url).render()
-    pdf_bytes = document.write_pdf(pdf_tags=True, custom_metadata=True)
-    if pdf_bytes is None:
-        raise ValueError("Failed to generate PDF from HTML content.")
-    return pikepdf.Pdf.open(BytesIO(pdf_bytes), allow_overwriting_input=overwrite)
+    """Converts HTML content to a PDF using WeasyPrint and returns
+    a pikepdf.Pdf object for further manipulation."""
+    try:
+        document = HTML(string=html_content, base_url=base_url).render()
+        pdf_bytes = document.write_pdf(pdf_tags=True, custom_metadata=True)
+        if pdf_bytes is None:
+            raise RenderError("PDF bytes are None.")
+        return pikepdf.Pdf.open(BytesIO(pdf_bytes), allow_overwriting_input=overwrite)
+    except Exception as e:
+        raise RenderError(f"Failed to convert HTML into PDF: {e}") from e
 
 
 def render_pdf(
@@ -33,18 +40,32 @@ def render_pdf(
     overwrite_existing: bool = False,
     scan_pdf_accessibility: bool = True,
 ) -> tuple[Path, AccessibilityReport | None]:
-    html_content = render_html(template_dir, template_name, resume_data)
+    # ruff: noqa: E501
+    """
+    Renders a PDF from HTML content using the specified Jinja2 template and WeasyPrint.
+
+    Arguments:
+        template_dir: Path to the directory containing Jinja2 templates.
+        template_name: Name of the Jinja2 template file.
+        filename_template: Template string for the output PDF filename.
+        output_dir: Directory to save the generated PDF.
+        resume_data: ResumeData object containing the data to render.
+        overwrite_existing: Whether to overwrite an existing PDF file.
+        scan_pdf_accessibility: Whether to scan the generated PDF for accessibility issues.
+    Returns:
+        A tuple containing the path to the generated PDF and an optional AccessibilityReport.
+    """
+    html_content = _render_html(template_dir, template_name, resume_data)
     output_filename = render_output_filename(
         filename_template, resume_data.document_metadata
     )
     output_path = output_dir / output_filename
-    with resources.path("resumegen", "templates") as fspath:
-        pdf = _html_to_pdf(
-            html_content,
-            fspath,
-            overwrite_existing,
-        )
-    pdf_xmp_metadata_injection(pdf, resume_data.document_metadata)
+    pdf = _html_to_pdf(
+        html_content,
+        template_dir,
+        overwrite_existing,
+    )
+    _pdf_xmp_metadata_injection(pdf, resume_data.document_metadata)
     if scan_pdf_accessibility:
         report: AccessibilityReport = scan_accessibility(pdf)
         pdf.save(output_path)
@@ -54,24 +75,34 @@ def render_pdf(
         return output_path, None
 
 
-def pdf_xmp_metadata_injection(
+def _pdf_xmp_metadata_injection(
     pdf: pikepdf.Pdf, document_metadata: DocumentMetadata
 ) -> None:
-    logging.debug(f"Original PDF metadata: {pdf.open_metadata()}")
-    with pdf.open_metadata() as meta:
-        meta["dc:title"] = document_metadata.title
-        meta["dc:language"] = document_metadata.language  # type: ignore default always set through model
-        meta["xmpRights:Owner"] = document_metadata.author
-        meta["dc:subject"] = (
-            ", ".join(document_metadata.keywords) if document_metadata.keywords else ""
-        )
-        meta["dc:creator"] = [document_metadata.author]
-        meta["xmp:CreatorTool"] = "ResumeGen v1"
-        meta["pdf:keywords"] = (
-            ", ".join(document_metadata.keywords) if document_metadata.keywords else ""
-        )
-        meta["pdfuaid:part"] = "1"
-    pdf.Root.lang = String(document_metadata.language)  # type: ignore default always set through model
-    pdf.Root.MarkInfo = Dictionary(Marked=True)
-    pdf.Root.ViewerPreferences = Dictionary(DisplayDocTitle=True)
-    logging.debug(f"Updated PDF metadata: {pdf.open_metadata()}")
+    """Modifies the XMP metadate of the PDF since WeasyPrint can only set
+    some metadata at render time.
+    """
+    try:
+        with pdf.open_metadata() as meta:
+            logger.debug("Original PDF metadata: %s", meta)
+            meta["dc:title"] = document_metadata.title
+            meta["dc:language"] = document_metadata.language  # type: ignore default always set through model
+            meta["xmpRights:Owner"] = document_metadata.author
+            meta["dc:subject"] = (
+                ", ".join(document_metadata.keywords)
+                if document_metadata.keywords
+                else ""
+            )
+            meta["dc:creator"] = [document_metadata.author]
+            meta["xmp:CreatorTool"] = "ResumeGen v1"
+            meta["pdf:keywords"] = (
+                ", ".join(document_metadata.keywords)
+                if document_metadata.keywords
+                else ""
+            )
+            meta["pdfuaid:part"] = "1"
+            pdf.Root.lang = String(document_metadata.language)  # type: ignore default always set through model
+            pdf.Root.MarkInfo = Dictionary(Marked=True)
+            pdf.Root.ViewerPreferences = Dictionary(DisplayDocTitle=True)
+            logger.debug("Updated PDF metadata: %s", meta)
+    except Exception as e:
+        raise PdfError(f"Failed to inject metadata into PDF: {e}") from e
