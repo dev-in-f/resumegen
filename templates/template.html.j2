@@ -4,8 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="{{ document_metadata.author }}">
+    <meta name="keywords" content="{{ document_metadata.keywords | join(', ') }}">
+    <meta name="language" content="{{ document_metadata.language }}">
+    <meta name="description" content="{{ document_metadata.description }}">
     <title>{{ document_metadata.title }}</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="fonts/fonts.css">
 </head>
 
 <body>
@@ -43,10 +48,11 @@
             {% endfor %}
         </div>
     </section>
+    <br>
     <section id="experience">
         <h2>Work Experience</h2>
         {% for entry in resume_data.experience %}
-        <div class="entry">
+        <div class="entry {% if loop.last %}page-break{% endif %}">
             <div class="entry-header">
                 <div class="split">
                     <h3>{{ entry.title }}</h3>
@@ -66,6 +72,7 @@
         </div>
         {% endfor %}
     </section>
+    <br>
     <section id="projects">
         <h2>Projects</h2>
         {% for project in resume_data.projects %}
@@ -97,6 +104,7 @@
         </div>
         {% endfor %}
     </section>
+    <br>
     <section id="education">
         <h2>Education</h2>
         {% for education in resume_data.education %}
@@ -107,7 +115,7 @@
                     <span>{{ education.completion_date }}</span>
                 </div>
                 <span class="subtitle">{{ education.degree }} {% if education.gpa %} | GPA: {{ education.gpa }}{% endif
-                    %}{% if education.honors %} | Honors: {{ education.honors | join('| ') }}{% endif %}</span>
+                    %}{% if education.honors %} | {{ education.honors | join(' | ') }}{% endif %}</span>
             </div>
             {% if education.description %}
             <p>{{ education.description }}</p>
