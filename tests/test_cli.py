@@ -1,5 +1,5 @@
 import logging
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import litellm
 import pydantic
@@ -44,6 +44,11 @@ class TestLoggingOverrides:
             content2 = f2.read()
         assert "Message 1" in content1
         assert "Message 2" in content2
+
+    def test_logging_overrides_verbose(self):
+        logging.getLogger("resumegen.cli").setLevel(logging.WARNING)
+        _override_logging_options(None, None, verbose=True)
+        assert logging.getLogger("resumegen.cli").getEffectiveLevel() == logging.DEBUG
 
 
 @pytest.fixture
@@ -771,3 +776,66 @@ class TestTailorCommand:
             )
             assert result.exit_code == 1
             assert "Unexpected error" in result.output
+
+
+class TestScanPdfCommand:
+    @patch("resumegen.cli.scan_accessibility")
+    @patch("resumegen.cli.pikepdf.open")
+    def test_scan_pdf_command(self, mock_pikepdf_open, mock_scan, tmp_path):
+        mock_pikepdf_open.return_value.__enter__.return_value = MagicMock()
+        mock_scan.return_value.get_report_string.return_value = (
+            "Accessibility report content"
+        )
+        pdf_file = tmp_path / "test.pdf"
+        pdf_file.write_bytes(b"%PDF-1.4\n%EOF")
+        result = runner.invoke(
+            app,
+            [
+                "scan-pdf",
+                str(pdf_file),
+            ],
+        )
+        assert result.exit_code == 0
+        mock_scan.assert_called_once()
+        assert "Accessibility report content" in result.output
+
+    def test_scan_pdf_command_exits_with_code_1_on_exception(self, tmp_path):
+        pdf_file = tmp_path / "test.pdf"
+        pdf_file.write_bytes(b"%PDF-1.4\n%EOF")
+        with (
+            patch(
+                "resumegen.cli.scan_accessibility",
+                side_effect=RuntimeError("Scan failed"),
+            ),
+            patch("resumegen.cli.pikepdf.open") as mock_pikepdf_open,
+        ):
+            mock_pikepdf_open.return_value.__enter__.return_value = MagicMock()
+            result = runner.invoke(
+                app,
+                [
+                    "scan-pdf",
+                    str(pdf_file),
+                ],
+            )
+            assert result.exit_code == 1
+            assert "Scan failed" in result.output
+
+    def test_scan_pdf_command_exits_with_code_1_on_pdf_error(self, tmp_path):
+        pdf_file = tmp_path / "test.pdf"
+        pdf_file.write_bytes(b"%PDF-1.4\n%EOF")
+        with (
+            patch(
+                "resumegen.cli.scan_accessibility", side_effect=PdfError("PDF error")
+            ),
+            patch("resumegen.cli.pikepdf.open") as mock_pikepdf_open,
+        ):
+            mock_pikepdf_open.return_value.__enter__.return_value = MagicMock()
+            result = runner.invoke(
+                app,
+                [
+                    "scan-pdf",
+                    str(pdf_file),
+                ],
+            )
+            assert result.exit_code == 1
+            assert "PDF accessibility scan failed" in result.output
