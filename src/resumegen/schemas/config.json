@@ -4,16 +4,6 @@
   "type": "object",
   "description": "JSON schema for the application configuration",
   "properties": {
-    "log_level": {
-      "type": "string",
-      "enum": ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
-      "description": "Logging level for the application",
-      "default": "INFO"
-    },
-    "log_file": {
-      "type": ["string"],
-      "description": "Path to the log file. If null, logging will be done to the console."
-    },
     "output_dir": {
       "type": "string",
       "description": "Directory where generated resumes will be saved. Defaults to `RESUME_DATA_DIR/output` if not specified."
