@@ -29,7 +29,7 @@ bootstrap()
 logger = logging.getLogger(__name__)
 
 
-setup_logging(logger)
+setup_logging(logging.getLogger("resumegen"))
 
 
 def render_options(f) -> click.Command:
@@ -49,7 +49,7 @@ def render_options(f) -> click.Command:
         help="Path to the configuration file. "
         "Defaults to ~/.config/resumegen/config.yaml",
     )(f)
-    f = click.option(
+    return click.option(
         "--force",
         "-f",
         "overwrite_existing",
@@ -58,7 +58,6 @@ def render_options(f) -> click.Command:
         default=False,
         help="Overwrite existing files.",
     )(f)
-    return f
 
 
 def logging_options(f) -> click.Command:
@@ -75,7 +74,7 @@ def logging_options(f) -> click.Command:
         type=click.Path(path_type=Path),
         help="Path to the log file.",
     )(f)
-    f = click.option(
+    return click.option(
         "-v",
         "--verbose",
         is_flag=True,
@@ -83,15 +82,16 @@ def logging_options(f) -> click.Command:
         help="Enable verbose logging (DEBUG level including imported module loggers).",
         envvar="RESUMEGEN_VERBOSE",
     )(f)
-    return f
 
 
 def _override_logging_options(
     log_level: str | None, log_file: Path | None, verbose: bool = False
 ) -> None:
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger("resumegen")
     if log_level:
         logger.setLevel(log_level)
+        for handler in logger.handlers:
+            handler.setLevel(log_level)
     if log_file:
         for handler in list(logger.handlers):
             if isinstance(handler, logging.FileHandler):
@@ -100,8 +100,10 @@ def _override_logging_options(
         logger.addHandler(logging.FileHandler(log_file))
     if verbose:
         logger.setLevel(logging.DEBUG)
-        for logger in LIBRARY_LOGGERS:
-            logging.getLogger(logger).setLevel(logging.DEBUG)
+        for handler in logger.handlers:
+            handler.setLevel(logging.DEBUG)
+        for lib_logger in LIBRARY_LOGGERS:
+            logging.getLogger(lib_logger).setLevel(logging.DEBUG)
 
 
 @click.command()
