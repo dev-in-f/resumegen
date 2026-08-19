@@ -2,7 +2,7 @@ import logging
 from unittest.mock import MagicMock, patch
 
 import pytest
-from typer.testing import CliRunner
+from click.testing import CliRunner
 
 from resumegen.cli import app, setup_logging
 

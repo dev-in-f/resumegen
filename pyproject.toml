@@ -6,15 +6,17 @@ readme = "README.md"
 authors = [{ name = "dev-in-f" }]
 requires-python = ">=3.13"
 dependencies = [
+    "click>=8.4.2",
     "configargparse>=1.7.5",
     "dotenv>=0.9.9",
     "jinja2",
+    "litellm>=1.90.0",
     "mcp>=1.27.2",
     "pikepdf",
     "platformdirs>=4.10.0",
     "pydantic",
+    "python-dotenv>=1.2.2",
     "pyyaml",
-    "typer>=0.26.7",
     "weasyprint",
 ]
 

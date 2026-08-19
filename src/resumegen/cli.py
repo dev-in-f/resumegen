@@ -1,8 +1,8 @@
 import logging
+import os
 from pathlib import Path
-from typing import Annotated
 
-import typer
+import click
 
 from resumegen.config import (
     RESUMEGEN_DEFAULT_CONFIG_PATH,
@@ -13,8 +13,38 @@ from resumegen.config import (
 )
 from resumegen.pdf import render_pdf
 from resumegen.renderer import output_html
-
-app = typer.Typer()
+def common_options(f) -> click.Command:
+    f = click.option(
+        "--log-level",
+        envvar="RESUMEGEN_LOG_LEVEL",
+        default=None,
+        help="Logging level (e.g., INFO, DEBUG).",
+    )(f)
+    f = click.option(
+        "--log-file",
+        envvar="RESUMEGEN_LOG_FILE",
+        default=None,
+        type=click.Path(path_type=Path),
+        help="Path to the log file.",
+    )(f)
+    f = click.option(
+        "--output-dir",
+        default=None,
+        type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
+        help="Directory to save the generated data.",
+    )(f)
+    f = click.option(
+        "-c",
+        "--config",
+        "config_path",
+        default=RESUMEGEN_DEFAULT_CONFIG_PATH,
+        envvar="RESUMEGEN_DEFAULT_CONFIG_PATH",
+        type=click.Path(exists=True, dir_okay=False, path_type=Path),
+        show_default=False,
+        help="Path to the configuration file. "
+        "Defaults to ~/.config/resumegen/config.yaml",
+    )(f)
+    return f
 
 
 def setup_logging(level: str, log_file: Path | None = None) -> None:
@@ -31,88 +61,68 @@ def setup_logging(level: str, log_file: Path | None = None) -> None:
     )
 
 
-@app.command()
-def main(
-    data_file: Annotated[Path, typer.Argument(help="Path to the data file.")],
-    log_level: Annotated[
-        str | None,
-        typer.Option(
-            "--log-level",
-            help="Logging level (e.g., INFO, DEBUG).",
-            envvar="RESUMEGEN_LOG_LEVEL",
-        ),
-    ] = None,
-    log_file: Annotated[
-        Path | None,
-        typer.Option(
-            help="Path to the log file.", envvar="RESUMEGEN_LOG_FILE", mode="rw"
-        ),
-    ] = None,
-    output_dir: Annotated[
-        Path | None,
-        typer.Option(
-            "--output-dir",
-            help="Directory to save the generated resume.",
-            exists=True,
-            file_okay=False,
-            dir_okay=True,
-        ),
-    ] = None,
-    output_template: Annotated[
-        str | None,
-        typer.Option(
-            "--output-template",
-            help="Filename template for the generated resume.",
-        ),
-    ] = None,
-    overwrite_existing: Annotated[
-        bool,
-        typer.Option("--force", "-f", help="Allow overwrite of existing output file."),
-    ] = False,
-    template_dir: Annotated[
-        Path | None,
-        typer.Option(
-            "--template-dir",
-            help="Directory containing the resume templates.",
-        ),
-    ] = None,
-    template_name: Annotated[
-        str | None,
-        typer.Option(
-            "-t",
-            "--template",
-            help="Filename of the resume template to use.",
-        ),
-    ] = None,
-    document_author: Annotated[
-        str | None, typer.Option("--author", help="Author of the resume.")
-    ] = None,
-    document_title: Annotated[
-        str | None, typer.Option("--title", help="Title of the resume.")
-    ] = None,
-    html_only: Annotated[
-        bool, typer.Option("--html", help="Render HTML only, no PDF generation.")
-    ] = False,
-    config_path: Annotated[
-        Path,
-        typer.Option(
-            "-c",
-            "--config",
-            help="Path to the configuration file. "
-            "Defaults to ~/.config/resumegen/config.yaml",
-            exists=True,
-            mode="r",
-            dir_okay=False,
-            show_default=False,
-            envvar="RESUMEGEN_DEFAULT_CONFIG_PATH",
-        ),
-    ] = RESUMEGEN_DEFAULT_CONFIG_PATH,
+@click.command()
+@common_options
+@click.argument(
+    "data_file",
+    type=click.File("r"),
+    default="-",
+)
+@click.option(
+    "--html",
+    "html_only",
+    is_flag=True,
+    default=False,
+    help="Render HTML only, no PDF generation.",
+)
+@click.option("--output-template", type=str, help="Template for the output filename.")
+@click.option(
+    "--force",
+    "-f",
+    "overwrite_existing",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="Overwrite existing files.",
+)
+@click.option(
+    "--template-dir",
+    type=click.Path(path_type=Path, file_okay=False, dir_okay=True),
+    help="Directory containing the templates.",
+)
+@click.option(
+    "--template-name",
+    type=str,
+    help="Name of the template relative to "
+    "the template directory to use for rendering.",
+)
+@click.option("document_author", "--author", type=str, help="Author of the document.")
+@click.option("document_title", "--title", type=str, help="Title of the document.")
+def render(
+    data_file: Path,
+    log_level: str | None,
+    log_file: Path | None,
+    output_dir: Path | None,
+    output_template: str | None,
+    overwrite_existing: bool,
+    template_dir: Path | None,
+    template_name: str | None,
+    document_author: str | None,
+    document_title: str | None,
+    html_only: bool,
+    config_path: Path,
 ):
+    """
+    data_file reads from stdin or takes a file path
+    """
     try:
         config_data = load_yaml_to_data_model(config_path, Config)
+        env_log_file = os.getenv("RESUMEGEN_LOG_FILE")
+        log_file_from_env = Path(env_log_file) if env_log_file else None
+
         setup_logging(
-            log_level or config_data.log_level,
-            log_file or config_data.log_file,
+            log_level or os.getenv("RESUMEGEN_LOG_LEVEL", "INFO"),
+            log_file or log_file_from_env,
         )
         logging.info("Configuration loaded successfully.")
         logging.debug(f"Configuration data: {config_data}")
@@ -161,8 +171,8 @@ def main(
 
     except Exception as e:
         logging.exception(f"Failed to generate resume: {e}")
-        raise typer.Exit(code=1) from e
+        raise click.exceptions.Exit(code=1) from e
 
-
+app = click.Group(commands={"render": render})
 if __name__ == "__main__":  # pragma no cover
     app()
