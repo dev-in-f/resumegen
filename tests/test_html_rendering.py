@@ -66,7 +66,7 @@ class TestHTMLRendering:
         assert Path(output_path).exists()
         assert Path(output_path).suffix == ".html"
         Path(output_path).relative_to(tmp_path)
-        with open(output_path) as f:
+        with Path(output_path).open() as f:
             content = f.read()
             assert "Jane Doe" in content
             assert "Acme Co." in content
