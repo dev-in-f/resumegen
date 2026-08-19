@@ -59,6 +59,12 @@ def create_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Render the template as HTML only, without generating a PDF.",
     )
+    parser.add_argument(
+        "-f",
+        "--force",
+        action="store_true",
+        help="Force overwrite of existing output file.",
+    )
     return parser
 
 
@@ -99,6 +105,8 @@ def main():
         html_content = render_html(document_config, app_config)
         html_to_pdf(
             html_content,
-            Path(output_path),
             str(app_config.template_dir),
+            output_path,
+            document_config.document_metadata,
+            overwrite=args.force,
         )
