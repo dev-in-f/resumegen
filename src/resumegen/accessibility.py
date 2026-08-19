@@ -23,16 +23,6 @@ class AccessibilityReport(BaseModel):
     def has_errors(self) -> bool:
         return any(i.severity == Severity.ERROR for i in self.issues)
 
-    def print(self) -> None:
-        if not self.issues:
-            print(
-                "No accessibility issues found. "
-                "The PDF is compliant with basic accessibility standards."
-            )
-            return
-        for issue in self.issues:
-            print(f"{issue.severity.value.upper()}: {issue.rule} - {issue.message}")
-
     def get_report(self) -> str:
         if not self.issues:
             return (

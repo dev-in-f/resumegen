@@ -56,19 +56,6 @@ class TestAccessibilityReport:
         )
         assert report.has_errors
 
-    def test_accessibility_report_print(self, capsys, example_issues):
-        report = AccessibilityReport(issues=example_issues)
-        report.print()
-        captured = capsys.readouterr()
-        assert "WARNING: TestRule1 - This is a warning." in captured.out
-        assert "ERROR: TestRule2 - This is an error." in captured.out
-
-    def test_accessibility_report_print_no_issues(self, capsys):
-        report = AccessibilityReport(issues=[])
-        report.print()
-        captured = capsys.readouterr()
-        assert "No accessibility issues found." in captured.out
-
     def test_accessibility_report_to_json(self, example_issues):
         report = AccessibilityReport(issues=example_issues)
         json_output = report.to_json()
