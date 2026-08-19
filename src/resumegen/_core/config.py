@@ -4,7 +4,6 @@ from importlib import resources
 from pathlib import Path
 from typing import Optional
 
-import yaml
 from platformdirs import user_config_path, user_data_path
 from pydantic import BaseModel, Field, field_validator
 
@@ -213,19 +212,3 @@ class Config(BaseModel):
         if Path(v).suffix != ".pdf":
             raise ValueError("Output filename must have a .pdf extension")
         return v
-
-
-def load_yaml_to_data_model[T: BaseModel](file_path: Path, model: type[T]) -> T:
-    """
-    Load a YAML file and validate it against a Pydantic data model.
-    Arguments:
-        file_path: Path to the YAML file.
-        model: Pydantic data model class to validate against.
-    Returns:
-        An instance of the data model populated with the data from the YAML file.
-    Raises:
-        ValidationError: If the data does not conform to the model.
-    """
-    with open(file_path) as f:
-        data = yaml.safe_load(f)
-        return model.model_validate(data)

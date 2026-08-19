@@ -29,6 +29,10 @@ skill_sections:
 
 MINIMAL_JOB_DESCRIPTION = "Software Engineer at Acme Corp\nWe build things."
 
+MINIMAL_CONFIG_YAML = """\
+template_dir: "templates"
+"""
+
 
 @pytest.fixture
 def data_file(tmp_path):
@@ -48,6 +52,13 @@ def master_data_file(tmp_path):
 def job_description_file(tmp_path):
     p = tmp_path / "job.md"
     p.write_text(MINIMAL_JOB_DESCRIPTION)
+    return p
+
+
+@pytest.fixture
+def config_file(tmp_path):
+    p = tmp_path / "config.yaml"
+    p.write_text(MINIMAL_CONFIG_YAML)
     return p
 
 

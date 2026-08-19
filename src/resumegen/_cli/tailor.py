@@ -1,0 +1,141 @@
+import logging
+import os
+from pathlib import Path
+
+import click
+import litellm
+from pydantic import ValidationError
+
+from resumegen._cli.shared import (
+    _load_yaml_to_data_model,
+    _override_logging_options,
+    logging_options,
+    render_options,
+)
+from resumegen._core.config import Config
+from resumegen._core.logging import color_message
+from resumegen._core.tailor import tailor_resume
+
+logger = logging.getLogger("resumegen.cli")
+
+
+@click.command()
+@render_options
+@logging_options
+@click.argument(
+    "master_data_file",
+    type=click.Path(path_type=Path, dir_okay=False, exists=True),
+)
+@click.argument(
+    "job_description_file",
+    type=click.Path(path_type=Path, dir_okay=False, exists=True),
+)
+@click.option(
+    "--model",
+    type=str,
+    help="Language model to use for tailoring the resume. "
+    "Required to be set via an environment variable, "
+    "in the config file, or as a command-line option.",
+    envvar="RESUMEGEN_MODEL",
+)
+@click.option(
+    "--base-url",
+    type=str,
+    help="Base URL for the language model API. "
+    "Required for generic models. "
+    "Check the litellm documentation for details on how to set this up.",
+    envvar="RESUMEGEN_BASE_URL",
+)
+@click.option(
+    "--track-cost",
+    is_flag=True,
+    default=False,
+    help="Track the cost of API calls to the language model. ",
+)
+@click.option(
+    "--job-title",
+    type=str,
+    help="Job title used in the output filename."
+    " If not provided, the first line of the job description will be used.",
+)
+@click.option(
+    "--output",
+    "-o",
+    "output_filename_template",
+    type=str,
+    help="Override the default output filename template. "
+    "Setting this will override the '--save' option. "
+    "The filename can use the placeholders {date}, {job_title}, "
+    "{model}, and {first_line} for dynamic content. "
+    "For example: 'tailored_resume_{job_title}_{date}.yaml'.",
+)
+@click.option(
+    "--save/--no-save",
+    "save_to_file",
+    is_flag=True,
+    default=True,
+    help="Save the rendered data to a file. "
+    "If not set, the rendered data will be output to stdout.",
+)
+def tailor(
+    master_data_file: Path,
+    job_description_file: Path,
+    log_level: str | None,
+    log_file: Path | None,
+    verbose: bool,
+    job_title: str | None,
+    model: str | None,
+    base_url: str | None,
+    track_cost: bool,
+    save_to_file: bool,
+    output_dir: Path | None,
+    config_path: Path,
+    overwrite_existing: bool,
+    output_filename_template: str | None = None,
+):
+    """Tailor resume data based on a job description using a LLM."""
+    _override_logging_options(log_level, log_file, verbose)
+    try:
+        app_config = _load_yaml_to_data_model(config_path, Config)
+        logger.debug("Configuration loaded.")
+        tailor_model = model or app_config.model or os.getenv("RESUMEGEN_MODEL", "")
+        result = tailor_resume(
+            master_data_file,
+            job_description_file,
+            output_dir or app_config.output_dir,
+            tailor_model,
+            base_url or app_config.base_url,
+            job_title,
+            track_cost,
+            save_to_file,
+            output_filename_template,
+            overwrite_existing,
+        )
+        if save_to_file:
+            click.echo(color_message(f"💾  Tailored data saved to: {result}", "green"))
+        else:
+            click.echo(result)
+    except ValidationError as e:
+        logger.exception("Data model validation failed.")
+        logger.warning(
+            "Ensure your data and configuration files match the expected schema."
+        )
+        raise click.exceptions.Exit(code=1) from e
+    except litellm.BadRequestError as e:  # type: ignore
+        logger.exception("Language model request failed with a bad request.")
+        raise click.exceptions.Exit(code=1) from e
+    except litellm.Timeout as e:  # type: ignore
+        logger.exception("Language model request timed out.")
+        raise click.exceptions.Exit(code=1) from e
+    except litellm.RateLimitError as e:  # type: ignore
+        logger.exception("Language model rate limit exceeded.")
+        raise click.exceptions.Exit(code=1) from e
+    except litellm.BudgetExceededError as e:  # type: ignore
+        logger.exception("Language model budget exceeded.")
+        raise click.exceptions.Exit(code=1) from e
+    except litellm.APIError as e:  # type: ignore
+        logger.exception("Language model API error.")
+        raise click.exceptions.Exit(code=1) from e
+    except Exception as e:
+        logger.exception("Unexpected error during tailoring.")
+        raise click.exceptions.Exit(code=1) from e

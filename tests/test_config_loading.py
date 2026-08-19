@@ -1,5 +1,3 @@
-import textwrap
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -16,7 +14,6 @@ from resumegen._core.config import (
     ProjectEntry,
     ResumeData,
     SkillsSubsection,
-    load_yaml_to_data_model,
 )
 
 
@@ -303,7 +300,9 @@ class TestConfig:
             assert config.output_dir.is_dir()
 
     def test_output_filename_raises_if_invalid(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            ValueError, match="Output filename must have a \\.pdf extension"
+        ):
             Config(output_filename="invalid_filename.xml")
 
     def test_valid_output_filename(self):
@@ -335,40 +334,3 @@ class TestMasterData:
     def test_invalid_skill_proficiency_below_range(self, proficiency):
         with pytest.raises(ValidationError):
             MasterSkillEntry(name="Python", proficiency=proficiency)
-
-
-class TestLoadYamlConfig:
-    def _write_yaml(self, tmp_path: Path, content: str) -> Path:
-        p = tmp_path / "config.yaml"
-        p.write_text(textwrap.dedent(content))
-        return p
-
-    def test_load_valid_config(self, tmp_path):
-        yaml_content = """
-        log_level: DEBUG
-        output_dir: /tmp/resume_output
-        output_filename: "{author}_resume_{date}.pdf"
-        overwrite_existing: true
-        template_dir: /tmp/resume_templates
-        template_name: "custom_template.html.j2"
-        """
-        config_path = self._write_yaml(tmp_path, yaml_content)
-        config = load_yaml_to_data_model(config_path, Config)
-        assert config.output_dir == Path("/tmp/resume_output")
-        assert config.output_filename == "{author}_resume_{date}.pdf"
-        assert config.overwrite_existing is True
-        assert config.template_dir == Path("/tmp/resume_templates")
-        assert config.template_name == "custom_template.html.j2"
-
-    def test_load_invalid_config(self, tmp_path):
-        yaml_content = """
-        output_dir: 7
-        output_filename: "{author}_resume_{date}.pdf"
-        overwrite_existing: true
-        template_dir: /tmp/resume_templates
-        template_name: "custom_template.html.j2"
-        """
-        config_path = self._write_yaml(tmp_path, yaml_content)
-
-        with pytest.raises(ValidationError):
-            load_yaml_to_data_model(config_path, Config)

@@ -1,0 +1,92 @@
+import logging
+from pathlib import Path
+
+import click
+import yaml
+from pydantic import BaseModel
+
+from resumegen._core.config import RESUMEGEN_DEFAULT_CONFIG_PATH
+from resumegen._core.logging import LIBRARY_LOGGERS
+
+
+def render_options(f) -> click.Command:
+    f = click.option(
+        "--output-dir",
+        default=None,
+        type=click.Path(exists=False, file_okay=False, dir_okay=True, path_type=Path),
+        help="Directory to save the generated data.",
+    )(f)
+    f = click.option(
+        "-c",
+        "--config",
+        "config_path",
+        default=RESUMEGEN_DEFAULT_CONFIG_PATH,
+        type=click.Path(exists=True, dir_okay=False, path_type=Path),
+        show_default=False,
+        help="Path to the configuration file. "
+        "Defaults to ~/.config/resumegen/config.yaml",
+    )(f)
+    return click.option(
+        "--force",
+        "-f",
+        "overwrite_existing",
+        type=bool,
+        is_flag=True,
+        default=False,
+        help="Overwrite existing files.",
+    )(f)
+
+
+def logging_options(f) -> click.Command:
+    f = click.option(
+        "--log-level",
+        envvar="RESUMEGEN_LOG_LEVEL",
+        default=None,
+        help="Logging level (e.g., INFO, DEBUG).",
+    )(f)
+    f = click.option(
+        "--log-file",
+        envvar="RESUMEGEN_LOG_FILE",
+        default=None,
+        type=click.Path(path_type=Path),
+        help="Path to the log file.",
+    )(f)
+    return click.option(
+        "-v",
+        "--verbose",
+        is_flag=True,
+        default=False,
+        help="Enable verbose logging (DEBUG level including imported module loggers).",
+        envvar="RESUMEGEN_VERBOSE",
+    )(f)
+
+
+def _override_logging_options(
+    log_level: str | None, log_file: Path | None, verbose: bool = False
+) -> None:
+    logger = logging.getLogger("resumegen")
+    if log_level:
+        logger.setLevel(log_level)
+        for handler in logger.handlers:
+            handler.setLevel(log_level)
+    if log_file:
+        for handler in list(logger.handlers):
+            if isinstance(handler, logging.FileHandler):
+                logger.removeHandler(handler)
+                handler.close()
+        logger.addHandler(logging.FileHandler(log_file))
+    if verbose:
+        logger.setLevel(logging.DEBUG)
+        for handler in logger.handlers:
+            handler.setLevel(logging.DEBUG)
+        for lib_logger in LIBRARY_LOGGERS:
+            logging.getLogger(lib_logger).setLevel(logging.DEBUG)
+
+
+def _load_yaml_to_data_model[T: BaseModel](file_path: Path, model: type[T]) -> T:
+    """
+    Load a YAML file and validate it against a Pydantic data model.
+    """
+    with file_path.open() as f:
+        data = yaml.safe_load(f)
+        return model.model_validate(data)
