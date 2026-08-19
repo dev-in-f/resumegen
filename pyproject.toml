@@ -23,6 +23,7 @@ build-backend = "uv_build"
 [dependency-groups]
 dev = [
     "commitizen",
+    "freezegun>=1.5.5",
     "prek>=0.4.4",
     "pytest",
     "pytest-cov",

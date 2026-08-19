@@ -3,9 +3,9 @@
 logging_config:
   level: INFO
   file: app.log
-data_file: data/resume.yaml
+data_file: resume.example.yaml
 output_config:
   output_dir: output
-  output_filename: resume_{name}_{date}.pdf
+  output_filename: "{author}_resume_{date}.pdf"
   overwrite: false
 template_dir: templates
