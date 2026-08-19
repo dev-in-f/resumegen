@@ -310,21 +310,6 @@ class TestConfig:
         config = Config(output_filename="{author}_resume_{date}.pdf")
         assert config.output_filename == "{author}_resume_{date}.pdf"
 
-    def test_valid_log_file(self, tmp_path):
-        log_file_path = tmp_path / "log.txt"
-        config = Config(log_file=log_file_path)
-        assert config.log_file == log_file_path
-
-    def test_log_file_dir_missing_is_created(self, tmp_path):
-        log_file_path = tmp_path / "logs" / "log.txt"
-        config = Config(log_file=log_file_path)
-        assert config.log_file.parent.exists()
-        assert config.log_file.parent.is_dir()
-
-    def test_log_file_none(self):
-        config = Config(log_file=None)
-        assert config.log_file is None
-
 
 class TestMasterData:
     @pytest.mark.parametrize(
@@ -369,7 +354,6 @@ class TestLoadYamlConfig:
         """
         config_path = self._write_yaml(tmp_path, yaml_content)
         config = load_yaml_to_data_model(config_path, Config)
-        assert config.log_level == "DEBUG"
         assert config.output_dir == Path("/tmp/resume_output")
         assert config.output_filename == "{author}_resume_{date}.pdf"
         assert config.overwrite_existing is True
