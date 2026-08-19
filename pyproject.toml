@@ -6,6 +6,8 @@ readme = "README.md"
 authors = [{ name = "dev-in-f" }]
 requires-python = ">=3.13"
 dependencies = [
+    "anthropic>=0.109.1",
+    "dotenv>=0.9.9",
     "jinja2",
     "mcp>=1.27.2",
     "pikepdf",
