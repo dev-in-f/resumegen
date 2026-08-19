@@ -46,6 +46,7 @@ def output_html(document_config: DocumentConfig, app_config: AppConfig) -> str:
     output_filename = render_output_filename(document_config, app_config)
     output_path = app_config.output_config.output_dir / output_filename
     output_path = output_path.with_suffix(".html")
+    logging.info(f"Saving rendered HTML to: {output_path}")
     with open(output_path, "w") as f:
         f.write(html_content)
     return str(output_path)
