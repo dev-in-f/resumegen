@@ -6,6 +6,7 @@ import pikepdf
 from pikepdf import Dictionary, String
 from weasyprint import HTML
 
+from resumegen.accessibility import AccessibilityReport, scan_accessibility
 from resumegen.config import DocumentMeta
 
 
@@ -15,14 +16,16 @@ def html_to_pdf(
     output_file: Path,
     meta: DocumentMeta,
     overwrite: bool = False,
-) -> None:
+) -> AccessibilityReport:
     document = HTML(string=html_content, base_url=base_url).render()
     pdf_bytes = document.write_pdf(pdf_tags=True, custom_metadata=True)
     if pdf_bytes is None:
         raise ValueError("Failed to generate PDF from HTML content.")
     with pikepdf.open(BytesIO(pdf_bytes), allow_overwriting_input=overwrite) as pdf:
         pdf_xmp_metadata_injection(pdf, meta)
+        report = scan_accessibility(pdf)
         pdf.save(output_file)
+    return report
 
 
 def pdf_xmp_metadata_injection(

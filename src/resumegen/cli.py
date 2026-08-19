@@ -103,10 +103,11 @@ def main():
         output_html(document_config, app_config)
     else:
         html_content = render_html(document_config, app_config)
-        html_to_pdf(
+        report = html_to_pdf(
             html_content,
             str(app_config.template_dir),
             output_path,
             document_config.document_metadata,
             overwrite=args.force,
         )
+        report.print()
