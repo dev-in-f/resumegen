@@ -168,7 +168,7 @@ class Config(BaseModel):
         return path.resolve()
 
 
-def load_yaml_config[T: BaseModel](file_path: Path, model: type[T]) -> T:
+def load_yaml_to_data_model[T: BaseModel](file_path: Path, model: type[T]) -> T:
     with open(file_path) as f:
         data = yaml.safe_load(f)
         logging.debug(f"Loaded YAML from {file_path}: {data}")
