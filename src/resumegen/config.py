@@ -9,19 +9,11 @@ from pydantic import BaseModel, field_validator
 # ruff: noqa: UP045
 
 
-# ▄▄▄▄▄▄▄                                       ▄▄▄▄▄▄▄               ▄▄
-# ███▀▀███▄                                    ███▀▀▀▀▀              ██  ▀▀
-# ███▄▄███▀ ▄█▀█▄ ▄█▀▀▀ ██ ██ ███▄███▄ ▄█▀█▄   ███      ▄███▄ ████▄ ▀██▀ ██  ▄████
-# ███▀▀██▄  ██▄█▀ ▀███▄ ██ ██ ██ ██ ██ ██▄█▀   ███      ██ ██ ██ ██  ██  ██  ██ ██
-# ███  ▀███ ▀█▄▄▄ ▄▄▄█▀ ▀██▀█ ██ ██ ██ ▀█▄▄▄   ▀███████ ▀███▀ ██ ██  ██  ██▄ ▀████
-#                                                                               ██
-#                                                                             ▀▀▀
-class DocumentMeta(BaseModel):
-    title: str
-    author: str
-    description: Optional[str] = None
-    language: str = "en-US"
-    keywords: list[str] = []
+# ▄▄▄▄▄▄▄                                      ▄▄▄▄▄▄
+# ███▀▀███▄                                    ███▀▀██▄        ██
+# ███▄▄███▀ ▄█▀█▄ ▄█▀▀▀ ██ ██ ███▄███▄ ▄█▀█▄   ███  ███  ▀▀█▄ ▀██▀▀ ▀▀█▄
+# ███▀▀██▄  ██▄█▀ ▀███▄ ██ ██ ██ ██ ██ ██▄█▀   ███  ███ ▄█▀██  ██  ▄█▀██
+# ███  ▀███ ▀█▄▄▄ ▄▄▄█▀ ▀██▀█ ██ ██ ██ ▀█▄▄▄   ██████▀  ▀█▄██  ██  ▀█▄██
 
 
 class PersonalInfo(BaseModel):
@@ -44,7 +36,7 @@ class ExperienceEntry(BaseModel):
     location: str
     start_date: str
     end_date: Optional[str] = None
-    description_bullets: list[str] = []
+    description_bullets: list[str]
 
 
 class DisplayLink(BaseModel):
@@ -57,8 +49,8 @@ class ProjectEntry(BaseModel):
     timeframe: Optional[str] = None
     link: Optional[DisplayLink] = None
     subtitle: Optional[str] = None
-    description_bullets: list[str] = []
-    technologies: list[str] = []
+    description_bullets: list[str]
+    technologies: Optional[list[str]] = None
 
 
 class EducationEntry(BaseModel):
@@ -80,26 +72,28 @@ class ResumeData(BaseModel):
     education: list[EducationEntry] = []
 
 
-class DocumentConfig(BaseModel):
-    document_metadata: DocumentMeta
-    template_filename: Path = Path("template.html.j2")
-    resume_data: ResumeData
+#  ▄▄▄▄▄▄▄               ▄▄
+# ███▀▀▀▀▀              ██  ▀▀
+# ███      ▄███▄ ████▄ ▀██▀ ██  ▄████
+# ███      ██ ██ ██ ██  ██  ██  ██ ██
+# ▀███████ ▀███▀ ██ ██  ██  ██▄ ▀████
+#                                  ██
+#                                ▀▀▀
 
 
-#   ▄▄▄▄                  ▄▄▄▄▄▄▄               ▄▄
-# ▄██▀▀██▄               ███▀▀▀▀▀              ██  ▀▀
-# ███  ███ ████▄ ████▄   ███      ▄███▄ ████▄ ▀██▀ ██  ▄████
-# ███▀▀███ ██ ██ ██ ██   ███      ██ ██ ██ ██  ██  ██  ██ ██
-# ███  ███ ████▀ ████▀   ▀███████ ▀███▀ ██ ██  ██  ██▄ ▀████
-#          ██    ██                                       ██
-#          ▀▀    ▀▀                                     ▀▀▀
-class AppConfig(BaseModel):
+class Config(BaseModel):
     log_level: str = "INFO"
     log_file: Optional[Path] = None
     output_dir: Path = Path("output").resolve()
-    output_filename: str = "{author}_resume_{date}.pdf"
+    output_filename: str = "{document_author}_resume_{date}.pdf"
     overwrite_existing: bool = False
     template_dir: Path = Path("templates").resolve()
+    template_filename: Path = Path("template.html.j2")
+    document_title: str
+    document_author: str
+    document_description: Optional[str] = None
+    document_language: Optional[str] = "en-US"
+    document_keywords: Optional[list[str]] = None
 
     @field_validator("template_dir")
     @classmethod
