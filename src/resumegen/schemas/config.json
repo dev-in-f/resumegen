@@ -27,6 +27,14 @@
       "type": "string",
       "description": "Filename of the resume template to use",
       "default": "template.html.j2"
+    },
+    "model": {
+      "type": "string",
+      "description": "The LLM model used for tailoring functionality. Check the documentation for supported models."
+    },
+    "base_url": {
+      "type": "string",
+      "description": "A base URL is required for OpenAI compatible APIs (e.g. llama.cpp)"
     }
   }
 }
