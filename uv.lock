@@ -1488,7 +1488,6 @@ dependencies = [
     { name = "dotenv" },
     { name = "jinja2" },
     { name = "litellm" },
-    { name = "mcp" },
     { name = "pikepdf" },
     { name = "platformdirs" },
     { name = "pydantic" },
@@ -1507,6 +1506,9 @@ dev = [
     { name = "pytest-cov" },
     { name = "uv-dynamic-versioning" },
 ]
+mcp = [
+    { name = "mcp" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -1515,7 +1517,6 @@ requires-dist = [
     { name = "dotenv", specifier = ">=0.9.9" },
     { name = "jinja2" },
     { name = "litellm", specifier = ">=1.90.0" },
-    { name = "mcp", specifier = ">=1.27.2" },
     { name = "pikepdf" },
     { name = "platformdirs", specifier = ">=4.10.0" },
     { name = "pydantic" },
@@ -1534,6 +1535,7 @@ dev = [
     { name = "pytest-cov" },
     { name = "uv-dynamic-versioning", specifier = ">=0.14.0" },
 ]
+mcp = [{ name = "mcp", specifier = ">=1.28.1" }]
 
 [[package]]
 name = "rpds-py"
