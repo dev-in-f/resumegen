@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from click.testing import CliRunner
 
-from resumegen.cli import app, setup_logging
+from resumegen.cli import _override_logging_options, app
 
 runner = CliRunner()
 
@@ -31,8 +31,38 @@ skill_sections:
 """
 
 MINIMAL_CONFIG_YAML = """\
-log_level: "INFO"
+template_dir: "templates"
 """
+
+
+class TestLoggingOverrides:
+    def test_logging_level_cli_overrides(self):
+        logging.getLogger("resumegen.cli").setLevel(logging.WARNING)
+        _override_logging_options("INFO", None)
+        assert logging.getLogger("resumegen.cli").getEffectiveLevel() == logging.INFO
+
+    def test_logging_file_cli_overrides(self, tmp_path):
+        log_file = tmp_path / "test.log"
+        _override_logging_options(None, log_file)
+        logger = logging.getLogger("resumegen.cli")
+        logger.info("Test message")
+        with open(log_file) as f:
+            content = f.read()
+        assert "Test message" in content
+
+    def test_logging_removes_handler_set_previously(self, tmp_path):
+        log_file1 = tmp_path / "test1.log"
+        log_file2 = tmp_path / "test2.log"
+        _override_logging_options(None, log_file1)
+        logger = logging.getLogger("resumegen.cli")
+        logger.info("Message 1")
+        _override_logging_options(None, log_file2)
+        logger.info("Message 2")
+        with open(log_file1) as f1, open(log_file2) as f2:
+            content1 = f1.read()
+            content2 = f2.read()
+        assert "Message 1" in content1
+        assert "Message 2" in content2
 
 
 @pytest.fixture
@@ -54,39 +84,6 @@ def output_dir(tmp_path):
     d = tmp_path / "output"
     d.mkdir()
     return d
-
-
-# ── setup_logging ──────────────────────────────────────────────────────────────
-
-
-class TestSetupLogging:
-    def test_sets_info_level_by_default(self):
-        setup_logging("INFO")
-        assert logging.getLogger().level == logging.INFO
-
-    def test_sets_debug_level(self):
-        setup_logging("DEBUG")
-        assert logging.getLogger().level == logging.DEBUG
-
-    def test_unknown_level_falls_back_to_info(self):
-        setup_logging("NOTAREAL")
-        assert logging.getLogger().level == logging.INFO
-
-    def test_adds_file_handler_when_log_file_given(self, tmp_path):
-        log_file = tmp_path / "test.log"
-        setup_logging("INFO", log_file)
-        root = logging.getLogger()
-        handler_types = [type(h) for h in root.handlers]
-        assert logging.FileHandler in handler_types
-
-    def test_no_file_handler_without_log_file(self):
-        setup_logging("INFO", None)
-        root = logging.getLogger()
-        for h in root.handlers:
-            assert not isinstance(h, logging.FileHandler)
-
-
-# ── main command ───────────────────────────────────────────────────────────────
 
 
 class TestMainCommand:
@@ -300,27 +297,6 @@ class TestMainCommand:
             ],
         )
         assert result.exit_code == 1
-
-    @patch("resumegen.cli.render_pdf")
-    def test_log_level_from_cli_overrides_config(
-        self, mock_render, data_file, config_file, output_dir
-    ):
-        mock_render.return_value = (output_dir / "resume.pdf", None)
-        result = runner.invoke(
-            app,
-            [
-                "render",
-                str(data_file),
-                "--config",
-                str(config_file),
-                "--output-dir",
-                str(output_dir),
-                "--log-level",
-                "DEBUG",
-            ],
-        )
-        assert result.exit_code == 0
-        assert logging.getLogger().level == logging.DEBUG
 
     @patch("resumegen.cli.render_pdf")
     def test_output_template_forwarded_to_render(
