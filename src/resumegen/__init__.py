@@ -1,4 +1,5 @@
-def main() -> None:
-    from .cli import main as cli_main
+from resumegen.cli import app
 
-    cli_main()
+
+def main() -> None:
+    app()
