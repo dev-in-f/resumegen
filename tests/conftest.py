@@ -32,14 +32,6 @@ def minimal_resume_data(minimal_document_metadata) -> ResumeData:
 
 
 @pytest.fixture
-def template_dir(tmp_path):
-    d = tmp_path / "template"
-    d.mkdir()
-    (d / "template.html.j2").write_text("<html></html>")
-    return d
-
-
-@pytest.fixture
 def minimal_document_metadata() -> DocumentMetadata:
     return DocumentMetadata(
         title="Resume",

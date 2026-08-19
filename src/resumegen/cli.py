@@ -141,7 +141,6 @@ def main(
             output = output_html(
                 working_template_dir,
                 working_template_name,
-                document_metadata,
                 resume_data,
                 working_output_filename,
                 working_output_dir,
@@ -167,5 +166,5 @@ def main(
         raise typer.Exit(code=1) from e
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma no cover
     app()
