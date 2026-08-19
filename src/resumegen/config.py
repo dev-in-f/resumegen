@@ -176,7 +176,7 @@ class Config(BaseModel):
                 f"Template path exists but is not a directory: {path}. Using default",
                 stacklevel=2,
             )
-            default_dir = Path("templates")
+            default_dir = Path(str(resources.files("resumegen") / "templates"))
             if not default_dir.exists():
                 logging.info(
                     (
@@ -200,10 +200,10 @@ class Config(BaseModel):
         elif not path.is_dir():
             warnings.warn(
                 f"Output path exists but is not a directory: {path}"
-                " Using default directory 'output'",
+                f" Using default directory '{RESUMEGEN_DATA_DIR / 'output'}'",
                 stacklevel=2,
             )
-            output_dir = Path("output")
+            output_dir = RESUMEGEN_DATA_DIR / "output"
             if not output_dir.exists():
                 logging.info(
                     f"Default output directory does not exist, creating: {output_dir}",
@@ -229,7 +229,8 @@ class Config(BaseModel):
             warnings.warn(
                 f"Log file directory does not exist: {path.parent}", stacklevel=2
             )
-            return None
+            os.makedirs(path.parent, exist_ok=True)
+            return path.resolve()
         return path.resolve()
 
 

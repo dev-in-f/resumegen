@@ -41,7 +41,12 @@ def template_dir(tmp_path):
 
 @pytest.fixture
 def minimal_document_metadata() -> DocumentMetadata:
-    return DocumentMetadata(title="Resume", author="Jane Doe")
+    return DocumentMetadata(
+        title="Resume",
+        author="Jane Doe",
+        keywords=["python", "engineer"],
+        language="en-US",
+    )
 
 
 @pytest.fixture
