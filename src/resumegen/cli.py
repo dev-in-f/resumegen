@@ -1,5 +1,6 @@
 import argparse
 import logging
+import warnings
 from pathlib import Path
 
 from resumegen.config import (
@@ -15,13 +16,17 @@ def prefer_cli_arg(cli_value, config_value):
     return cli_value if cli_value is not None else config_value
 
 
-def setup_logging(level: str):
+def setup_logging(level: str, output_file: Path | None = None):
     mapping = logging.getLevelNamesMapping()
     numeric_level = mapping.get(level.upper(), logging.INFO)
     logging.basicConfig(
         level=numeric_level,
         format="%(levelname)s [%(name)s] %(message)s",
         force=True,
+        handlers=[
+            logging.StreamHandler(),
+            logging.FileHandler(output_file) if output_file else logging.NullHandler(),
+        ],
     )
 
 
@@ -45,8 +50,8 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--output",
         "-o",
-        help="Path to save the generated resume. Defaults to 'resume.pdf'.",
-        default="resume.pdf",
+        help="Path to save the generated resume."
+        " Uses default from config if not provided.",
     )
     parser.add_argument(
         "--html",
@@ -60,7 +65,6 @@ def main():
     parser = create_parser()
     args = parser.parse_args()
 
-    # Configure early so config-loading logs and validation errors are visible.
     setup_logging("DEBUG" if args.debug else "INFO")
 
     if args.config:
@@ -73,15 +77,20 @@ def main():
 
     if args.debug:
         app_config.logging_config.level = "DEBUG"
-    setup_logging(app_config.logging_config.level)
+    setup_logging(app_config.logging_config.level, app_config.logging_config.file)
     logging.info("Initial configuration loaded...")
 
-    # validation done at AppConfig level, so we can assume it's valid here
     data_file: Path = prefer_cli_arg(args.data, app_config.data_file)
 
     document_config = load_yaml_config(data_file, DocumentConfig)
     logging.info("Document configuration loaded...")
+
     output_path = prefer_cli_arg(args.output, app_config.output_config.output_filename)
     logging.info(f"Outputting to {output_path}")
     if args.html:
         output_html(document_config, app_config)
+    else:
+        warnings.warn(
+            "PDF generation not implemented yet, defaulting to HTML output",
+            stacklevel=2,
+        )
