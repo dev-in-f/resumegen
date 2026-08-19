@@ -1,0 +1,11 @@
+---
+# yaml-language-server: $schema=./appconfig-schema.json
+logging_config:
+  level: INFO
+  file: app.log
+data_file: data/resume.yaml
+output_config:
+  output_dir: output
+  output_filename: resume_{name}_{date}.pdf
+  overwrite: false
+template_dir: templates
