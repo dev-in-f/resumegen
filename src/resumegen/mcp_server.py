@@ -8,12 +8,12 @@ from mcp.server.fastmcp import Context, FastMCP
 from mcp.server.fastmcp.prompts import base
 from pydantic import BaseModel
 
+from resumegen._cli.shared import _load_yaml_to_data_model
 from resumegen._core.accessibility import AccessibilityReport, scan_accessibility
 from resumegen._core.config import (
     RESUMEGEN_DATA_DIR,
     Config,
     ResumeData,
-    load_yaml_to_data_model,
 )
 from resumegen._core.pdf import render_pdf
 
@@ -78,7 +78,7 @@ async def generate_resume(resume_data_path: str, ctx: Context) -> str:
         )
     except Exception:
         cfg = Config()
-    resume_data: ResumeData = load_yaml_to_data_model(
+    resume_data: ResumeData = _load_yaml_to_data_model(
         Path(resume_data_path), ResumeData
     )
     with resources.path("resumegen", "templates") as template_dir:
@@ -119,7 +119,7 @@ def validate_resume_yaml(yaml_file: str) -> str:
     Validate a resume YAML file (by path) against the schema and return any errors.
     """
     try:
-        load_yaml_to_data_model(Path(yaml_file), ResumeData)
+        _load_yaml_to_data_model(Path(yaml_file), ResumeData)
     except (ValueError, yaml.YAMLError, OSError) as e:
         return f"Validation failed: {e}"
     else:
