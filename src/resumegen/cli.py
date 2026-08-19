@@ -9,8 +9,8 @@ from resumegen.config import (
     DocumentConfig,
     load_yaml_config,
 )
-from resumegen.pdf import html_to_pdf
-from resumegen.renderer import output_html, render_html, render_output_filename
+from resumegen.pdf import render_pdf
+from resumegen.renderer import output_html
 
 app = typer.Typer()
 
@@ -45,18 +45,7 @@ def strip_none_objects(d: dict) -> dict:
 def render_output_with_a11y_report(
     document_config: DocumentConfig, app_config: AppConfig
 ):
-    html_content = render_html(document_config, app_config)
-    output_path = Path(app_config.output_config.output_dir) / render_output_filename(
-        document_config, app_config
-    )
-    report = html_to_pdf(
-        html_content,
-        str(app_config.template_dir),
-        output_path,
-        document_config.document_metadata,
-        overwrite=app_config.output_config.overwrite,
-    )
-    report.print()
+    render_pdf(app_config, document_config, scan_pdf_accessibility=True)
 
 
 def deep_merge(base: dict, overrides: dict) -> dict:
@@ -229,11 +218,7 @@ def generate(
 
     logging.info("Document configuration loaded...")
 
-    output_filename = render_output_filename(document_config, app_config)
-    output_path = Path(app_config.output_config.output_dir) / output_filename
-
     if html:
-        logging.info(f"Output will be saved to: {output_path.with_suffix('.html')}")
         output_html(document_config, app_config)
     else:
         render_output_with_a11y_report(document_config, app_config)

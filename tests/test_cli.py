@@ -1,5 +1,5 @@
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
 from typer.testing import CliRunner
@@ -144,14 +144,8 @@ def test_log_file_config_creates_log_file(runner, tmp_path, test_command_args):
 
 
 def test_generate_creates_pdf_in_tmp(runner, test_command_args):
-    with (
-        patch("resumegen.cli.html_to_pdf") as mock_pdf,
-        patch("resumegen.cli.render_html") as mock_render,
-    ):
-        mock_report = Mock()
-        mock_report.print = Mock()
-        mock_pdf.return_value = mock_report
-        mock_render.return_value = "<html>rendered content</html>"
+    with patch("resumegen.cli.render_pdf") as mock_pdf:
+        mock_pdf.return_value = Path("/tmp/output.pdf")
 
         result = runner.invoke(
             app,
@@ -163,14 +157,14 @@ def test_generate_creates_pdf_in_tmp(runner, test_command_args):
 
     assert result.exit_code == 0
     mock_pdf.assert_called_once()
-    mock_report.print.assert_called_once()
+    assert mock_pdf.call_args.kwargs["scan_pdf_accessibility"] is True
 
 
 def test_generate_html_only_in_tmp(runner, test_command_args):
 
     with (
         patch("resumegen.cli.output_html") as mock_html,
-        patch("resumegen.cli.html_to_pdf") as mock_pdf,
+        patch("resumegen.cli.render_pdf") as mock_pdf,
     ):
         result = runner.invoke(
             app,
@@ -187,14 +181,8 @@ def test_generate_html_only_in_tmp(runner, test_command_args):
 
 
 def test_generate_with_force_flag(runner, test_command_args):
-    with (
-        patch("resumegen.cli.html_to_pdf") as mock_pdf,
-        patch("resumegen.cli.render_html") as mock_render,
-    ):
-        mock_report = Mock()
-        mock_report.print = Mock()
-        mock_pdf.return_value = mock_report
-        mock_render.return_value = "<html>content</html>"
+    with patch("resumegen.cli.render_pdf") as mock_pdf:
+        mock_pdf.return_value = Path("/tmp/output.pdf")
 
         result = runner.invoke(
             app,
@@ -207,22 +195,16 @@ def test_generate_with_force_flag(runner, test_command_args):
 
     assert result.exit_code == 0
 
-    call_kwargs = mock_pdf.call_args.kwargs
-    assert call_kwargs["overwrite"] is True
+    app_config = mock_pdf.call_args[0][0]
+    assert app_config.output_config.overwrite is True
 
 
 def test_generate_with_custom_template(runner, tmp_path, test_command_args):
     custom_template = tmp_path / "custom.html.j2"
     custom_template.write_text("<html><body>Custom</body></html>")
 
-    with (
-        patch("resumegen.cli.html_to_pdf") as mock_pdf,
-        patch("resumegen.cli.render_html") as mock_render,
-    ):
-        mock_report = Mock()
-        mock_report.print = Mock()
-        mock_pdf.return_value = mock_report
-        mock_render.return_value = "<html>content</html>"
+    with patch("resumegen.cli.render_pdf") as mock_pdf:
+        mock_pdf.return_value = Path("/tmp/output.pdf")
 
         result = runner.invoke(
             app,
@@ -244,14 +226,8 @@ def test_generate_to_custom_output_dir(runner, complete_test_setup):
     custom_output = env["tmp_path"] / "custom_output"
     custom_output.mkdir()
 
-    with (
-        patch("resumegen.cli.html_to_pdf") as mock_pdf,
-        patch("resumegen.cli.render_html") as mock_render,
-    ):
-        mock_report = Mock()
-        mock_report.print = Mock()
-        mock_pdf.return_value = mock_report
-        mock_render.return_value = "<html>content</html>"
+    with patch("resumegen.cli.render_pdf") as mock_pdf:
+        mock_pdf.return_value = custom_output / "resume.pdf"
 
         result = runner.invoke(
             app,
@@ -268,10 +244,9 @@ def test_generate_to_custom_output_dir(runner, complete_test_setup):
 
     assert result.exit_code == 0, f"Failed: {result.output}"
 
-    # Verify output path uses custom directory
-    call_args = mock_pdf.call_args[0]
-    output_path = call_args[2]
-    assert str(custom_output) in str(output_path)
+    # Verify output dir passed via app config matches the custom directory
+    app_config = mock_pdf.call_args[0][0]
+    assert app_config.output_config.output_dir == custom_output.resolve()
 
 
 def test_cli_validates_nonexistent_data_file(runner, complete_test_setup):

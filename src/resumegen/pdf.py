@@ -7,25 +7,43 @@ from pikepdf import Dictionary, String
 from weasyprint import HTML
 
 from resumegen.accessibility import AccessibilityReport, scan_accessibility
-from resumegen.config import DocumentMeta
+from resumegen.config import AppConfig, DocumentConfig, DocumentMeta
+from resumegen.renderer import render_html, render_output_filename
 
 
-def html_to_pdf(
+def _html_to_pdf(
     html_content: str,
     base_url: str,
-    output_file: Path,
-    meta: DocumentMeta,
     overwrite: bool = False,
-) -> AccessibilityReport:
+) -> pikepdf.Pdf:
     document = HTML(string=html_content, base_url=base_url).render()
     pdf_bytes = document.write_pdf(pdf_tags=True, custom_metadata=True)
     if pdf_bytes is None:
         raise ValueError("Failed to generate PDF from HTML content.")
-    with pikepdf.open(BytesIO(pdf_bytes), allow_overwriting_input=overwrite) as pdf:
-        pdf_xmp_metadata_injection(pdf, meta)
-        report = scan_accessibility(pdf)
-        pdf.save(output_file)
-    return report
+    return pikepdf.Pdf.open(BytesIO(pdf_bytes), allow_overwriting_input=overwrite)
+
+
+def render_pdf(
+    app_config: AppConfig,
+    document_config: DocumentConfig,
+    scan_pdf_accessibility: bool = True,
+) -> Path:
+    html_content = render_html(document_config, app_config)
+    output_filename = render_output_filename(document_config, app_config)
+    output_path = app_config.output_config.output_dir / output_filename
+    pdf = _html_to_pdf(
+        html_content,
+        base_url=str(Path(__file__).parent),
+        overwrite=app_config.output_config.overwrite,
+    )
+    pdf_xmp_metadata_injection(pdf, document_config.document_metadata)
+    if scan_pdf_accessibility:
+        report: AccessibilityReport = scan_accessibility(pdf)
+        logging.info("Accessibility scan completed. Report:")
+        report.print()
+    pdf.save(output_path)
+    logging.info(f"PDF generated at: {output_path.resolve()}")
+    return output_path
 
 
 def pdf_xmp_metadata_injection(
