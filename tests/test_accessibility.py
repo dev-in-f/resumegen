@@ -82,6 +82,17 @@ class TestAccessibilityReport:
         assert data["issues"][1]["rule"] == "TestRule2"
         assert data["issues"][1]["message"] == "This is an error."
 
+    def test_get_report(self, example_issues):
+        report = AccessibilityReport(issues=example_issues)
+        report_str = report.get_report()
+        assert "WARNING: TestRule1 - This is a warning." in report_str
+        assert "ERROR: TestRule2 - This is an error." in report_str
+
+    def test_get_report_no_issues(self):
+        report = AccessibilityReport(issues=[])
+        report_str = report.get_report()
+        assert "No accessibility issues found." in report_str
+
 
 class TestScanAccessibility:
     def test_scan_accessibility_no_issues(self, accessible_pdf):
@@ -144,6 +155,17 @@ class TestScanAccessibility:
         assert (
             report.issues[0].message
             == "The PDF does not have MarkInfo indicating it is tagged."
+        )
+
+    def test_scan_accessibility_missing_struct_tree(self, accessible_pdf):
+        del accessible_pdf.Root["/StructTreeRoot"]
+        report = scan_accessibility(accessible_pdf)
+        assert len(report.issues) == 1
+        assert report.issues[0].severity == Severity.WARNING
+        assert report.issues[0].rule == "MissingStructTree"
+        assert (
+            report.issues[0].message
+            == "The PDF does not have a structural tree (/StructTreeRoot)."
         )
 
 

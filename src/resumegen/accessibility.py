@@ -33,6 +33,19 @@ class AccessibilityReport(BaseModel):
         for issue in self.issues:
             print(f"{issue.severity.value.upper()}: {issue.rule} - {issue.message}")
 
+    def get_report(self) -> str:
+        if not self.issues:
+            return (
+                "No accessibility issues found. "
+                "The PDF is compliant with basic accessibility standards."
+            )
+        report_lines = []
+        for issue in self.issues:
+            report_lines.append(
+                f"{issue.severity.value.upper()}: {issue.rule} - {issue.message}"
+            )
+        return "\n".join(report_lines)
+
     def to_json(self) -> str:
         return self.model_dump_json()
 
