@@ -3,7 +3,7 @@ from datetime import datetime
 
 from jinja2 import Environment, FileSystemLoader
 
-from resumegen.config import AppConfig, DocumentConfig
+from resumegen.config import AppConfig, DocumentConfig, DocumentMeta
 
 
 def _render_html(document_config: DocumentConfig, app_config: AppConfig) -> str:
@@ -14,21 +14,35 @@ def _render_html(document_config: DocumentConfig, app_config: AppConfig) -> str:
     )
 
 
+def _sanitize_metadata(metadata: DocumentMeta) -> dict[str, str | list[str]]:
+    """Normalize metadata values for filename rendering."""
+    metadata_dict = metadata.model_dump()
+    for key, value in metadata_dict.items():
+        if isinstance(value, str):
+            sanitized = value.lower().replace(" ", "_")
+            metadata_dict[key] = sanitized
+    return metadata_dict
+
+
 def _render_filename(document_config: DocumentConfig, app_config: AppConfig) -> str:
+    """Renders the output filename based on the template and document metadata.
+    Supports placeholders matching DocumentMeta attributes."""
     output_filename_template = app_config.output_config.output_filename
-    name = document_config.document_metadata.title.replace(" ", "_").lower()
+    metadata = _sanitize_metadata(document_config.document_metadata)
+
+    if "keywords" in metadata and isinstance(metadata["keywords"], list):
+        metadata["keywords"] = "_".join(metadata["keywords"]).lower().replace(" ", "_")
+
     date_str = datetime.now().strftime("%Y%m%d")
     logging.debug(
         f"Rendering output filename with template: {output_filename_template}"
-        f", name: {name}, date: {date_str}"
     )
-    return output_filename_template.format(name=name, date=date_str)
+    return output_filename_template.format(**metadata, date=date_str)
 
 
 def output_html(document_config: DocumentConfig, app_config: AppConfig) -> str:
     html_content = _render_html(document_config, app_config)
     output_filename = _render_filename(document_config, app_config)
-    # ensure output file extension is .html
     output_path = app_config.output_config.output_dir / output_filename
     if output_path.suffix.lower() != ".html":
         output_path = output_path.with_suffix(".html")

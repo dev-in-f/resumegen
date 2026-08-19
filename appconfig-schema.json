@@ -31,8 +31,8 @@
         },
         "output_filename": {
           "type": "string",
-          "description": "Filename for the generated resume, supports placeholders for name and date",
-          "default": "resume_{name}_{date}.pdf"
+          "description": "Filename for the generated resume, supports placeholders for title, date, and author",
+          "default": "{author}_resume_{date}.pdf"
         },
         "overwrite": {
           "type": "boolean",

@@ -148,7 +148,7 @@ class OutputConfig(BaseModel):
             return output_dir.resolve()
         return path.resolve()
 
-    output_filename: str = "{name}_resume_{date}.pdf"
+    output_filename: str = "{author}_resume_{date}.pdf"
     overwrite: bool = False
 
 
