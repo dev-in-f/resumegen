@@ -1,11 +1,11 @@
 import logging
-import os
 from pathlib import Path
 from typing import Annotated
 
 import typer
 
 from resumegen.config import (
+    RESUMEGEN_DEFAULT_CONFIG_PATH,
     Config,
     DocumentMetadata,
     ResumeData,
@@ -15,9 +15,6 @@ from resumegen.pdf import render_pdf
 from resumegen.renderer import output_html
 
 app = typer.Typer()
-DEFAULT_CONFIG_PATH = Path(os.path.expanduser("~/.config/resumegen/config.yaml"))
-
-MAIN_ARGS = {}
 
 
 def setup_logging(level: str, log_file: Path | None = None) -> None:
@@ -109,9 +106,9 @@ def main(
             exists=True,
             mode="r",
             dir_okay=False,
-            envvar="RESUMEGEN_CONFIG",
+            envvar="RESUMEGEN_DEFAULT_CONFIG_PATH",
         ),
-    ] = DEFAULT_CONFIG_PATH,
+    ] = RESUMEGEN_DEFAULT_CONFIG_PATH,
 ):
     try:
         config_data = load_yaml_to_data_model(config_path, Config)
