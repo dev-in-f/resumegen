@@ -102,6 +102,8 @@ class LoggingConfig(BaseModel):
     @field_validator("file")
     @classmethod
     def resolve_log_file_path(cls, v):
+        if v is None:
+            return None
         path = Path(v)
         if not path.parent.exists():
             warnings.warn(
