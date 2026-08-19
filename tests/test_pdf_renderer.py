@@ -18,19 +18,6 @@ def sample_meta():
     )
 
 
-@pytest.fixture
-def blank_pdf():
-    pdf = pikepdf.new()
-    page = pikepdf.Page(
-        pikepdf.Dictionary(
-            Type=pikepdf.Name("/Page"),
-            MediaBox=[0, 0, 612, 792],
-        )
-    )
-    pdf.pages.append(page)
-    return pdf
-
-
 SIMPLE_HTML = "<html><body><h1>Test</h1></body></html>"
 
 

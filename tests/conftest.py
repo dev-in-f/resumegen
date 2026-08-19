@@ -1,3 +1,4 @@
+import pikepdf
 import pytest
 
 
@@ -31,3 +32,29 @@ def not_a_dir_path(tmp_path, monkeypatch):
     file_path = tmp_path / "not_a_directory"
     file_path.write_text("I am a file, not a directory.")
     return file_path
+
+
+@pytest.fixture
+def blank_pdf():
+    pdf = pikepdf.new()
+    page = pikepdf.Page(
+        pikepdf.Dictionary(
+            Type=pikepdf.Name("/Page"),
+            MediaBox=[0, 0, 612, 792],
+        )
+    )
+    pdf.pages.append(page)
+    return pdf
+
+
+@pytest.fixture
+def accessible_pdf(blank_pdf):
+    with blank_pdf.open_metadata() as meta:
+        meta["dc:title"] = "Test PDF"
+        meta["dc:language"] = "en-US"
+        meta["pdfuaid:part"] = "1"
+    blank_pdf.Root["/MarkInfo"] = pikepdf.Dictionary(Marked=True)
+    blank_pdf.Root["/Lang"] = "en-US"
+    blank_pdf.Root["/StructTreeRoot"] = pikepdf.Dictionary(TextOne="Test")
+
+    return blank_pdf
