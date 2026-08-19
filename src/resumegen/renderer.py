@@ -50,7 +50,6 @@ def render_output_filename(filename_template: str, metadata: DocumentMetadata) -
 def output_html(
     template_dir: Path,
     template_name: str,
-    document_metadata: DocumentMetadata,
     resume_data: ResumeData,
     filename_template: str,
     output_dir: Path,

@@ -1,16 +1,34 @@
 import pikepdf
 import pytest
 
+from resumegen.config import DocumentMetadata, ResumeData
+
 
 @pytest.fixture
-def minimal_resume_data():
-    return {
-        "personal_info": {
+def minimal_resume_data(minimal_document_metadata) -> ResumeData:
+    return ResumeData(
+        personal_info={
             "name": "Jane Doe",
             "email": "jane@example.com",
             "location": "New York, NY",
-        }
-    }
+        },
+        document_metadata=minimal_document_metadata,
+        experience=[
+            {
+                "title": "Engineer",
+                "company": "Acme Co.",
+                "location": "New York, NY",
+                "start_date": "2020-01",
+                "description_bullets": ["Did stuff"],
+            }
+        ],
+        skill_sections=[
+            {
+                "title": "Languages",
+                "skills": ["Python"],
+            }
+        ],
+    )
 
 
 @pytest.fixture
@@ -22,8 +40,8 @@ def template_dir(tmp_path):
 
 
 @pytest.fixture
-def minimal_document_metadata():
-    return {"title": "Resume", "author": "Jane"}
+def minimal_document_metadata() -> DocumentMetadata:
+    return DocumentMetadata(title="Resume", author="Jane Doe")
 
 
 @pytest.fixture

@@ -8,6 +8,14 @@
 <body>
     <h1>{{ resume_data.personal_info.name }}</h1>
     <p>{{ resume_data.personal_info.email }}</p>
+    {% for entry in resume_data.experience %}
+    <div>{{ entry.company }}</div>
+    {% endfor %}
+    {% for section in resume_data.skill_sections %}
+    {% for skill in section.skills %}
+    <div>{{ skill }}</div>
+    {% endfor %}
+    {% endfor %}
 </body>
 
 </html>
