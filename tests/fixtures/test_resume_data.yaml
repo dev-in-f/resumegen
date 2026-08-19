@@ -1,0 +1,48 @@
+document_metadata:
+  title: "Test Resume"
+  author: "John Doe"
+  language: "en-US"
+
+template_filename: template.html.j2
+
+resume_data:
+  personal_info:
+    name: "John Doe"
+    email: "john@example.com"
+    location: "San Francisco, CA"
+    linkedin: "linkedin.com/in/johndoe"
+    github: "github.com/johndoe"
+
+  statement: "Experienced software engineer"
+
+  skill_sections:
+    - title: "Languages"
+      skills: "Python, JavaScript, TypeScript"
+    - title: "Frameworks"
+      skills: "React, Django, FastAPI"
+
+  experience:
+    - title: "Senior Software Engineer"
+      company: "Tech Corp"
+      location: "San Francisco, CA"
+      start_date: "2020-01"
+      end_date: "Present"
+      description_bullets:
+        - "Led team of 5 engineers"
+        - "Improved performance by 50%"
+
+  projects:
+    - title: "Open Source Project"
+      timeframe: "2019-2020"
+      description_bullets:
+        - "Created popular library"
+      technologies:
+        - "Python"
+        - "Docker"
+
+  education:
+    - degree: "B.S. Computer Science"
+      institution: "University of California"
+      location: "Berkeley, CA"
+      completion_date: "2019"
+      gpa: "3.8"
