@@ -29,15 +29,14 @@ def render_pdf(
     template_name: str,
     filename_template: str,
     output_dir: Path,
-    document_metadata: DocumentMetadata,
     resume_data: ResumeData,
     overwrite_existing: bool = False,
     scan_pdf_accessibility: bool = True,
 ) -> tuple[Path, AccessibilityReport | None]:
-    html_content = render_html(
-        template_dir, template_name, document_metadata, resume_data
+    html_content = render_html(template_dir, template_name, resume_data)
+    output_filename = render_output_filename(
+        filename_template, resume_data.document_metadata
     )
-    output_filename = render_output_filename(filename_template, document_metadata)
     output_path = output_dir / output_filename
     with resources.path("resumegen", "templates") as fspath:
         pdf = _html_to_pdf(
@@ -45,7 +44,7 @@ def render_pdf(
             fspath,
             overwrite_existing,
         )
-    pdf_xmp_metadata_injection(pdf, document_metadata)
+    pdf_xmp_metadata_injection(pdf, resume_data.document_metadata)
     if scan_pdf_accessibility:
         report: AccessibilityReport = scan_accessibility(pdf)
         pdf.save(output_path)

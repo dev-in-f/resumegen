@@ -10,14 +10,13 @@ from resumegen.config import DocumentMetadata, ResumeData
 def render_html(
     template_dir: Path,
     template_name: str,
-    document_metadata: DocumentMetadata,
     resume_data: ResumeData,
 ) -> str:
     env = Environment(loader=FileSystemLoader(template_dir))
     template = env.get_template(template_name)
     html = template.render(
         **{
-            "document_metadata": document_metadata.model_dump(),
+            "document_metadata": resume_data.document_metadata.model_dump(),
             "resume_data": resume_data.model_dump(),
         }
     )
@@ -56,10 +55,10 @@ def output_html(
     filename_template: str,
     output_dir: Path,
 ) -> Path:
-    html_content = render_html(
-        template_dir, template_name, document_metadata, resume_data
+    html_content = render_html(template_dir, template_name, resume_data)
+    output_filename = render_output_filename(
+        filename_template, resume_data.document_metadata
     )
-    output_filename = render_output_filename(filename_template, document_metadata)
     output_path = output_dir / output_filename
     output_path = output_path.with_suffix(".html")
     with open(output_path, "w") as f:

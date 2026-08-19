@@ -157,7 +157,6 @@ def main(
                 working_template_name,
                 working_output_filename,
                 working_output_dir,
-                document_metadata,
                 resume_data,
                 overwrite_existing or config_data.overwrite_existing,
             )
