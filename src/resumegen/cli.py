@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 setup_logging(logger)
 
 
-def common_render_options(f) -> click.Command:
+def render_options(f) -> click.Command:
     f = click.option(
         "--output-dir",
         default=None,
@@ -48,6 +48,15 @@ def common_render_options(f) -> click.Command:
         show_default=False,
         help="Path to the configuration file. "
         "Defaults to ~/.config/resumegen/config.yaml",
+    )(f)
+    f = click.option(
+        "--force",
+        "-f",
+        "overwrite_existing",
+        type=bool,
+        is_flag=True,
+        default=False,
+        help="Overwrite existing files.",
     )(f)
     return f
 
@@ -96,7 +105,7 @@ def _override_logging_options(
 
 
 @click.command()
-@common_render_options
+@render_options
 @logging_options
 @click.argument(
     "data_file",
@@ -110,15 +119,14 @@ def _override_logging_options(
     default=False,
     help="Render HTML only, no PDF generation.",
 )
-@click.option("--output-template", type=str, help="Template for the output filename.")
 @click.option(
-    "--force",
-    "-f",
-    "overwrite_existing",
-    type=bool,
-    is_flag=True,
-    default=False,
-    help="Overwrite existing files.",
+    "-o",
+    "--output",
+    "output_filename_template",
+    type=str,
+    help="Template for the output filename. "
+    "Supported placeholders: {date}, {author}, {title}, {language},"
+    " {description}, {keywords}. (Matches DocumentMetadata)",
 )
 @click.option(
     "--template-dir",
@@ -131,6 +139,14 @@ def _override_logging_options(
     help="Name of the template relative to "
     "the template directory to use for rendering.",
 )
+@click.option(
+    "--save-html/--no-save-html",
+    "save_to_file",
+    is_flag=True,
+    default=True,
+    help="Save the rendered HTML to a file."
+    "If not set, the rendered HTML will be output to stdout.",
+)
 @click.option("document_author", "--author", type=str, help="Author of the document.")
 @click.option("document_title", "--title", type=str, help="Title of the document.")
 def render(
@@ -139,7 +155,7 @@ def render(
     log_file: Path | None,
     verbose: bool,
     output_dir: Path | None,
-    output_template: str | None,
+    output_filename_template: str | None,
     overwrite_existing: bool,
     template_dir: Path | None,
     template_name: str | None,
@@ -147,9 +163,9 @@ def render(
     document_title: str | None,
     html_only: bool,
     config_path: Path,
+    save_to_file: bool = True,
 ):
-    """
-    Render a resume from a YAML data file into a PDF using a Jinja2 template.
+    """Render a resume from a YAML data file into a PDF using a Jinja2 template.
     DATA_FILE reads from stdin or takes a file path
     """
     _override_logging_options(log_level, log_file, verbose)
@@ -177,7 +193,9 @@ def render(
         working_template_dir = template_dir or config_data.template_dir
         working_template_name = template_name or config_data.template_name
         working_output_dir = output_dir or config_data.output_dir
-        working_output_filename = output_template or config_data.output_filename
+        working_output_filename = (
+            output_filename_template or config_data.output_filename
+        )
 
         if html_only:
             click.echo(color_message("🖨️  Rendering HTML only...", "cyan"))
@@ -187,6 +205,8 @@ def render(
                 working_output_filename,
                 working_template_name,
                 working_template_dir,
+                save_to_file,
+                overwrite_existing,
             )
             click.echo(
                 color_message(
@@ -213,24 +233,24 @@ def render(
                 click.echo(report.get_report_string())
 
     except ValidationError as e:
-        logger.error(f"Data model validation failed: {e}")
-        logger.error(
+        logger.exception("Data model validation failed.")
+        logger.warning(
             "Ensure your data and configuration files match the expected schema."
         )
         raise click.exceptions.Exit(code=1) from e
     except RenderError as e:
-        logger.error("Rendering failed: %s", e)
+        logger.exception("Rendering failed.")
         raise click.exceptions.Exit(code=1) from e
     except PdfError as e:
-        logger.error("PDF manipulation failed: %s", e)
+        logger.exception("PDF manipulation failed.")
         raise click.exceptions.Exit(code=1) from e
     except Exception as e:
-        logger.exception(f"Unexpected error: {e}")
+        logger.exception("Unexpected error.")
         raise click.exceptions.Exit(code=1) from e
 
 
 @click.command()
-@common_render_options
+@render_options
 @logging_options
 @click.argument(
     "master_data_file",
@@ -269,25 +289,23 @@ def render(
     " If not provided, the first line of the job description will be used.",
 )
 @click.option(
+    "--output",
+    "-o",
+    "output_filename_template",
+    type=str,
+    help="Override the default output filename template. "
+    "Setting this will override the '--save' option. "
+    "The filename can use the placeholders {date}, {job_title}, "
+    "{model}, and {first_line} for dynamic content. "
+    "For example: 'tailored_resume_{job_title}_{date}.yaml'.",
+)
+@click.option(
     "--save/--no-save",
     "save_to_file",
     is_flag=True,
     default=True,
-    help="Save the tailored data to a file. "
-    "If not set, the tailored data will be returned as a string.",
-)
-@click.option(
-    "--output",
-    "-o",
-    "output_filename",
-    type=str,
-    help="Override the default output filename. "
-    "Setting this will override the '--save' option. "
-    "Setting this will ignore the job title and "
-    "job description for filename generation."
-    "The filename can use the placeholders {date}, {job_title}, "
-    "{model}, and {first_line} for dynamic content. "
-    "For example: 'tailored_resume_{job_title}_{date}.yaml'.",
+    help="Save the rendered data to a file. "
+    "If not set, the rendered data will be output to stdout.",
 )
 def tailor(
     master_data_file: Path,
@@ -302,11 +320,10 @@ def tailor(
     save_to_file: bool,
     output_dir: Path | None,
     config_path: Path,
-    output_filename: str | None = None,
+    overwrite_existing: bool,
+    output_filename_template: str | None = None,
 ):
-    """
-    Tailor resume data based on a job description using a LLM.
-    """
+    """Tailor resume data based on a job description using a LLM."""
     _override_logging_options(log_level, log_file, verbose)
     try:
         app_config = load_yaml_to_data_model(config_path, Config)
@@ -317,42 +334,40 @@ def tailor(
             job_description_file,
             output_dir or app_config.output_dir,
             tailor_model,
+            base_url or app_config.base_url,
+            job_title,
             track_cost,
             save_to_file,
-            job_title,
-            base_url or app_config.base_url,
-            output_filename,
+            output_filename_template,
+            overwrite_existing,
         )
         if save_to_file:
             click.echo(color_message(f"💾  Tailored data saved to: {result}", "green"))
         else:
             click.echo(result)
     except ValidationError as e:
-        logger.error(f"Data model validation failed: {e}")
-        logger.error(
+        logger.exception("Data model validation failed.")
+        logger.warning(
             "Ensure your data and configuration files match the expected schema."
         )
         raise click.exceptions.Exit(code=1) from e
-    except ValueError as e:
-        logger.error(f"Tailoring failed: {e}")
-        raise click.exceptions.Exit(code=1) from e
     except litellm.BadRequestError as e:  # type: ignore
-        logger.error(f"Language model request failed: {e}")
+        logger.exception("Language model request failed with a bad request.")
         raise click.exceptions.Exit(code=1) from e
     except litellm.Timeout as e:  # type: ignore
-        logger.error(f"Language model request timed out: {e}")
+        logger.exception("Language model request timed out.")
         raise click.exceptions.Exit(code=1) from e
     except litellm.RateLimitError as e:  # type: ignore
-        logger.error(f"Language model rate limit exceeded: {e}")
+        logger.exception("Language model rate limit exceeded.")
         raise click.exceptions.Exit(code=1) from e
     except litellm.BudgetExceededError as e:  # type: ignore
-        logger.error(f"Language model budget exceeded: {e}")
+        logger.exception("Language model budget exceeded.")
         raise click.exceptions.Exit(code=1) from e
     except litellm.APIError as e:  # type: ignore
-        logger.error(f"Language model API error: {e}")
+        logger.exception("Language model API error.")
         raise click.exceptions.Exit(code=1) from e
     except Exception as e:
-        logger.exception(f"Tailoring failed with the following error: {e}")
+        logger.exception("Unexpected error during tailoring.")
         raise click.exceptions.Exit(code=1) from e
 
 
@@ -365,9 +380,7 @@ def tailor(
 def scan_pdf(
     pdf_file: Path, log_level: str | None, log_file: Path | None, verbose: bool
 ):
-    """
-    Scan a PDF for accessibility issues.
-    """
+    """Scan a PDF for accessibility issues."""
     _override_logging_options(log_level, log_file, verbose)
     try:
         click.echo(
@@ -377,10 +390,10 @@ def scan_pdf(
             report = scan_accessibility(pdf)
         click.echo(report.get_report_string())
     except PdfError as e:
-        logger.error(f"PDF accessibility scan failed: {e}")
+        logger.exception("PDF accessibility scan failed.")
         raise click.exceptions.Exit(code=1) from e
     except Exception as e:
-        logger.exception(f"Unexpected error during PDF scan: {e}")
+        logger.exception("Unexpected error during PDF scan.")
         raise click.exceptions.Exit(code=1) from e
 
 

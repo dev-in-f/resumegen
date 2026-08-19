@@ -285,7 +285,7 @@ class TestRenderCommand:
                 str(config_file),
                 "--output-dir",
                 str(output_dir),
-                "--output-template",
+                "--output",
                 "my_{author}.pdf",
             ],
         )
@@ -407,9 +407,9 @@ class TestTailorCommand:
             ],
         )
         assert result.exit_code == 0
-        _, kwargs = mock_tailor.call_args
+        _, _kwargs = mock_tailor.call_args
         call_args = mock_tailor.call_args.args
-        assert call_args[4] is True
+        assert call_args[6] is True
 
     @patch("resumegen.cli.tailor_resume")
     def test_save_flag_forwarded(
@@ -438,7 +438,7 @@ class TestTailorCommand:
         )
         assert result.exit_code == 0
         call_args = mock_tailor.call_args.args
-        assert call_args[5] is False
+        assert call_args[7] is False
 
     @patch("resumegen.cli.tailor_resume")
     def test_job_title_forwarded(
@@ -468,7 +468,7 @@ class TestTailorCommand:
         )
         assert result.exit_code == 0
         call_args = mock_tailor.call_args.args
-        assert call_args[6] == "Senior Engineer"
+        assert call_args[5] == "Senior Engineer"
 
     @patch("resumegen.cli.tailor_resume")
     def test_output_filename_forwarded(
@@ -528,7 +528,7 @@ class TestTailorCommand:
         )
         assert result.exit_code == 0
         call_args = mock_tailor.call_args.args
-        assert call_args[7] == "http://localhost:11434"
+        assert call_args[4] == "http://localhost:11434"
 
     @patch("resumegen.cli.tailor_resume")
     def test_exits_with_code_1_on_exception(
@@ -603,32 +603,6 @@ class TestTailorCommand:
             )
             assert result.exit_code == 1
             assert "Validation failed" in result.output
-
-    def test_value_error_exits_with_code_1(
-        self,
-        master_data_file,
-        job_description_file,
-        config_file,
-        output_dir,
-        monkeypatch,
-    ):
-        monkeypatch.setenv("RESUMEGEN_MODEL", "")
-        result = runner.invoke(
-            app,
-            [
-                "tailor",
-                str(master_data_file),
-                str(job_description_file),
-                "--config",
-                str(config_file),
-                "--output-dir",
-                str(output_dir),
-                "--model",
-                "",
-            ],
-        )
-        assert result.exit_code == 1
-        assert "Tailoring failed:" in result.output
 
     def test_bad_request_error_exits_with_code_1(
         self, master_data_file, job_description_file, config_file, output_dir
