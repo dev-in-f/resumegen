@@ -73,7 +73,7 @@ class TestRenderCommand:
         assert result.exit_code == 0
         mock_render.assert_called_once()
 
-    @patch("resumegen.cli.output_html")
+    @patch("resumegen.cli.render_html")
     def test_renders_html_when_flag_set(
         self, mock_html, data_file, config_file, output_dir
     ):
@@ -131,11 +131,8 @@ class TestRenderCommand:
         )
         assert result.exit_code == 0
         call_kwargs = mock_render.call_args
-        resume_data_arg = call_kwargs.args[4]
-        assert (
-            resume_data_arg.document_metadata.author == "Jane Doe"
-        )  # render_pdf gets resume_data unchanged
-        # The DocumentMetadata override happens internally; verify render_pdf was called
+        resume_data_arg = call_kwargs.args[0]
+        assert resume_data_arg.document_metadata.author == "Jane Doe"
         mock_render.assert_called_once()
 
     @patch("resumegen.cli.render_pdf")
@@ -177,9 +174,8 @@ class TestRenderCommand:
         )
         assert result.exit_code == 0
         _, kwargs = mock_render.call_args
-        # overwrite_existing is the last positional arg or a kwarg
         call_args = mock_render.call_args.args
-        assert call_args[5] is True  # overwrite_existing=True when --force
+        assert call_args[5] is True
 
     @patch("resumegen.cli.render_pdf")
     def test_template_options_forwarded(
@@ -206,8 +202,8 @@ class TestRenderCommand:
         )
         assert result.exit_code == 0
         call_args = mock_render.call_args.args
-        assert call_args[0] == template_dir
-        assert call_args[1] == "custom.html.j2"
+        assert call_args[3] == "custom.html.j2"
+        assert call_args[4] == template_dir
 
     @patch("resumegen.cli.render_pdf")
     def test_no_report_print_when_report_is_none(

@@ -15,7 +15,7 @@ from resumegen.core.config import (
     load_yaml_to_data_model,
 )
 from resumegen.core.exceptions import PdfError, RenderError
-from resumegen.core.html_rendering import output_html
+from resumegen.core.html_rendering import render_html
 from resumegen.core.logging import color_message, setup_logging
 from resumegen.core.pdf import render_pdf
 from resumegen.core.tailor import tailor_resume
@@ -153,24 +153,28 @@ def render(
 
         if html_only:
             click.echo(color_message("🖨️  Rendering HTML only...", "cyan"))
-            output = output_html(
-                working_template_dir,
-                working_template_name,
+            output = render_html(
                 resume_data,
-                working_output_filename,
                 working_output_dir,
+                working_output_filename,
+                working_template_name,
+                working_template_dir,
             )
-            logger.info(
-                color_message(f"👻  HTML generated at: {output.resolve()}", "green")
+            click.echo(
+                color_message(
+                    "👻  HTML generated at: "
+                    f"{output.resolve() if isinstance(output, Path) else output}",
+                    "green",
+                )
             )
         else:
             click.echo(color_message("🖨️  Rendering PDF...", "cyan"))
             output, report = render_pdf(
-                working_template_dir,
-                working_template_name,
-                working_output_filename,
-                working_output_dir,
                 resume_data,
+                working_output_dir,
+                working_output_filename,
+                working_template_name,
+                working_template_dir,
                 overwrite_existing or config_data.overwrite_existing,
             )
             click.echo(

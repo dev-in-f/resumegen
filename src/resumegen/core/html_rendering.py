@@ -10,7 +10,7 @@ from resumegen.core.formatting import _format_output_filename
 logger = logging.getLogger(__name__)
 
 
-def _render_html(
+def _render_html_from_template(
     template_dir: Path,
     template_name: str,
     resume_data: ResumeData,
@@ -33,16 +33,17 @@ def _render_html(
         raise RenderError(f"Failed to render HTML: {e}") from e
 
 
-def output_html(
-    template_dir: Path,
-    template_name: str,
+def render_html(
     resume_data: ResumeData,
-    filename_template: str,
     output_dir: Path,
-) -> Path:
+    filename_template: str,
+    template_name: str,
+    template_dir: Path,
+    save_to_file: bool = True,
+) -> Path | str:
     """
     Renders the given ResumeData into HTML
-    and saves it to the specified output directory.
+    and saves it to the specified output directory or returns the content.
 
     Arguments:
         template_dir: Path to the directory containing Jinja2 templates.
@@ -52,9 +53,11 @@ def output_html(
         output_dir: Directory to save the rendered file.
 
     Returns:
-        Path to the saved HTML file.
+        Path to the saved HTML file or the HTML content.
     """
-    html_content = _render_html(template_dir, template_name, resume_data)
+    html_content = _render_html_from_template(template_dir, template_name, resume_data)
+    if not save_to_file:
+        return html_content
     output_filename = _format_output_filename(
         filename_template, resume_data.document_metadata
     )

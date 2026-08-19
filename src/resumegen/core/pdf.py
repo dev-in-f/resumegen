@@ -12,7 +12,7 @@ from resumegen.core.exceptions import PdfError
 from resumegen.core.html_rendering import (
     RenderError,
     _format_output_filename,
-    _render_html,
+    _render_html_from_template,
 )
 
 logger = logging.getLogger(__name__)
@@ -36,11 +36,11 @@ def _html_to_pdf(
 
 
 def render_pdf(
-    template_dir: Path,
-    template_name: str,
-    filename_template: str,
-    output_dir: Path,
     resume_data: ResumeData,
+    output_dir: Path,
+    filename_template: str,
+    template_name: str,
+    template_dir: Path,
     overwrite_existing: bool = False,
     scan_pdf_accessibility: bool = True,
 ) -> tuple[Path, AccessibilityReport | None]:
@@ -59,7 +59,7 @@ def render_pdf(
     Returns:
         A tuple containing the path to the generated PDF and an optional AccessibilityReport.
     """
-    html_content = _render_html(template_dir, template_name, resume_data)
+    html_content = _render_html_from_template(template_dir, template_name, resume_data)
     output_filename = _format_output_filename(
         filename_template, resume_data.document_metadata
     )

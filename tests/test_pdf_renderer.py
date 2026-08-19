@@ -71,11 +71,11 @@ class TestRenderPdf:
 
     def test_creates_output_file(self, minimal_resume_data):
         output_path, _ = render_pdf(
-            self.config.template_dir,
-            self.config.template_name,
-            self.config.output_filename,
-            self.config.output_dir,
             minimal_resume_data,
+            self.config.output_dir,
+            self.config.output_filename,
+            self.config.template_name,
+            self.config.template_dir,
             scan_pdf_accessibility=False,
         )
 
@@ -83,11 +83,11 @@ class TestRenderPdf:
 
     def test_returns_pdf_in_output_dir(self, minimal_resume_data):
         output_path, _ = render_pdf(
-            self.config.template_dir,
-            self.config.template_name,
-            self.config.output_filename,
-            self.config.output_dir,
             minimal_resume_data,
+            self.config.output_dir,
+            self.config.output_filename,
+            self.config.template_name,
+            self.config.template_dir,
             scan_pdf_accessibility=False,
         )
         assert output_path.parent == self.config.output_dir
@@ -95,11 +95,11 @@ class TestRenderPdf:
 
     def test_output_is_valid_pdf(self, minimal_resume_data):
         output_path, _ = render_pdf(
-            self.config.template_dir,
-            self.config.template_name,
-            self.config.output_filename,
-            self.config.output_dir,
             minimal_resume_data,
+            self.config.output_dir,
+            self.config.output_filename,
+            self.config.template_name,
+            self.config.template_dir,
             scan_pdf_accessibility=False,
         )
         with pikepdf.open(output_path) as pdf:
@@ -107,11 +107,11 @@ class TestRenderPdf:
 
     def test_metadata_written_to_output_pdf(self, minimal_resume_data):
         output_path, _ = render_pdf(
-            self.config.template_dir,
-            self.config.template_name,
-            self.config.output_filename,
-            self.config.output_dir,
             minimal_resume_data,
+            self.config.output_dir,
+            self.config.output_filename,
+            self.config.template_name,
+            self.config.template_dir,
             scan_pdf_accessibility=False,
         )
         with pikepdf.open(output_path) as pdf, pdf.open_metadata() as meta:
@@ -128,11 +128,11 @@ class TestRenderPdf:
     def test_runs_accessibility_scan_by_default(self, minimal_resume_data):
         with patch("resumegen.core.pdf.scan_accessibility") as mock_scan:
             _, report = render_pdf(
-                self.config.template_dir,
-                self.config.template_name,
-                self.config.output_filename,
-                self.config.output_dir,
                 minimal_resume_data,
+                self.config.output_dir,
+                self.config.output_filename,
+                self.config.template_name,
+                self.config.template_dir,
             )
         mock_scan.assert_called_once()
         assert report is not None
@@ -140,11 +140,11 @@ class TestRenderPdf:
     def test_skips_accessibility_scan_when_disabled(self, minimal_resume_data):
         with patch("resumegen.core.pdf.scan_accessibility") as mock_scan:
             render_pdf(
-                self.config.template_dir,
-                self.config.template_name,
-                self.config.output_filename,
-                self.config.output_dir,
                 minimal_resume_data,
+                self.config.output_dir,
+                self.config.output_filename,
+                self.config.template_name,
+                self.config.template_dir,
                 scan_pdf_accessibility=False,
             )
         mock_scan.assert_not_called()
@@ -159,11 +159,11 @@ class TestRenderPdf:
                 match="Failed to convert HTML into PDF: PDF bytes are None",
             ):
                 render_pdf(
-                    self.config.template_dir,
-                    self.config.template_name,
-                    self.config.output_filename,
-                    self.config.output_dir,
                     minimal_resume_data,
+                    self.config.output_dir,
+                    self.config.output_filename,
+                    self.config.template_name,
+                    self.config.template_dir,
                     scan_pdf_accessibility=False,
                 )
 
@@ -174,11 +174,11 @@ class TestRenderPdf:
             mock_html.return_value.render.return_value = mock_doc
             with pytest.raises(RenderError):
                 output_path, _ = render_pdf(
-                    self.config.template_dir,
-                    self.config.template_name,
-                    self.config.output_filename,
-                    self.config.output_dir,
                     minimal_resume_data,
+                    self.config.output_dir,
+                    self.config.output_filename,
+                    self.config.template_name,
+                    self.config.template_dir,
                     scan_pdf_accessibility=False,
                 )
 
