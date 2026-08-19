@@ -149,8 +149,6 @@ class MasterData(BaseModel):
 
 
 class Config(BaseModel):
-    log_level: str = "INFO"
-    log_file: Optional[Path] = None
     output_dir: Path = Field(
         default=RESUMEGEN_DATA_DIR / "output", validate_default=True
     )
@@ -218,20 +216,6 @@ class Config(BaseModel):
         if Path(v).suffix != ".pdf":
             raise ValueError("Output filename must have a .pdf extension")
         return v
-
-    @field_validator("log_file")
-    @classmethod
-    def resolve_log_file_path(cls, v):
-        if v is None:
-            return None
-        path = Path(v)
-        if not path.parent.exists():
-            warnings.warn(
-                f"Log file directory does not exist: {path.parent}", stacklevel=2
-            )
-            os.makedirs(path.parent, exist_ok=True)
-            return path.resolve()
-        return path.resolve()
 
 
 def load_yaml_to_data_model[T: BaseModel](file_path: Path, model: type[T]) -> T:
