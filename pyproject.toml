@@ -46,11 +46,38 @@ dev = [
 ]
 
 [tool.ruff.lint]
-select = ["E", "F", "B", "UP", "SIM", "I"]
+select = [
+    "A",
+    "B",
+    "C4",
+    "C90",
+    "DTZ",
+    "E",
+    "F",
+    "FURB",
+    "G",
+    "I",
+    "ICN",
+    "LOG",
+    "N",
+    "PERF",
+    "PIE",
+    "PT",
+    "PTH",
+    "Q",
+    "RET",
+    "RUF",
+    "S",
+    "SIM",
+    "TID",
+    "TRY",
+    "UP",
+]
 unfixable = ["B"]
+ignore = ["TRY003"]
 
-[tool.bandit.assert_used]
-skips = ["*_test.py", "*test_*.py"]
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S"]
 
 [tool.pyright]
 ignore = ["tests/**"]
