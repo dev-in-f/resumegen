@@ -1,6 +1,5 @@
 import argparse
 import logging
-import warnings
 from pathlib import Path
 
 from resumegen.config import (
@@ -8,6 +7,7 @@ from resumegen.config import (
     DocumentConfig,
     load_yaml_config,
 )
+from resumegen.pdf import html_to_pdf
 from resumegen.renderer import output_html, render_html, render_output_filename
 
 
@@ -28,6 +28,7 @@ def setup_logging(level: str, output_file: Path | None = None):
             logging.FileHandler(output_file) if output_file else logging.NullHandler(),
         ],
     )
+    logging.getLogger("fontTools").setLevel(logging.ERROR)
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -95,7 +96,9 @@ def main():
     if args.html:
         output_html(document_config, app_config)
     else:
-        warnings.warn(
-            "PDF generation not implemented yet, defaulting to HTML output",
-            stacklevel=2,
+        html_content = render_html(document_config, app_config)
+        html_to_pdf(
+            html_content,
+            Path(output_path),
+            str(app_config.template_dir),
         )
