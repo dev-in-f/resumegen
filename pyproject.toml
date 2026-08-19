@@ -30,6 +30,9 @@ unfixable = ["B"]
 [tool.bandit.assert_used]
 skips = ["*_test.py", "*test_*.py"]
 
+[tool.pyright]
+ignore = ["tests/**"]
+
 
 [tool.commitizen]
 name = "cz_conventional_commits"

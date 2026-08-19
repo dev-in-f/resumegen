@@ -4,11 +4,15 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
+from resumegen import config as resumegen_config
 from resumegen.config import (
+    AppConfig,
     DocumentConfig,
     DocumentMeta,
     EducationEntry,
     ExperienceEntry,
+    LoggingConfig,
+    OutputConfig,
     PersonalInfo,
     ProjectEntry,
     ResumeData,
@@ -19,6 +23,11 @@ from resumegen.config import (
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+
+def package_dir() -> Path:
+    """Directory that config.py's relative-path validators resolve against."""
+    return Path(resumegen_config.__file__).parent
 
 
 def make_template_dir(tmp_path: Path) -> Path:
@@ -37,6 +46,13 @@ def minimal_resume_data() -> dict:
             "location": "New York, NY",
         }
     }
+
+
+def create_not_a_dir(tmp_path: Path, monkeypatch) -> Path:
+    monkeypatch.chdir(tmp_path)
+    file_path = tmp_path / "not_a_directory"
+    file_path.write_text("I am a file, not a directory.")
+    return file_path
 
 
 class TestDocumentMeta:
@@ -249,69 +265,233 @@ class TestDocumentConfig:
     def test_valid(self, tmp_path):
         template_dir = make_template_dir(tmp_path)
         config = DocumentConfig(
-            meta={"title": "Resume", "author": "Jane"},
-            template_dir=str(template_dir),
+            document_metadata={"title": "Resume", "author": "Jane"},
             resume_data=minimal_resume_data(),
+            template_path=str(template_dir / "template.html.j2"),
         )
-        assert Path(config.template_dir).is_dir()
-        assert (Path(config.template_dir) / "template.html.j2").exists()
+        assert Path(config.template_path).is_file()
+        assert (Path(config.template_path)).exists()
 
-    def test_template_dir_resolved_to_absolute(self, tmp_path):
+    def test_template_path_resolved_to_absolute(self, tmp_path):
         template_dir = make_template_dir(tmp_path)
         config = DocumentConfig(
-            meta={"title": "Resume", "author": "Jane"},
-            template_dir=str(template_dir),
+            document_metadata={"title": "Resume", "author": "Jane"},
             resume_data=minimal_resume_data(),
+            template_path=str(template_dir / "template.html.j2"),
         )
-        assert Path(config.template_dir).is_absolute()
+        assert Path(config.template_path).is_absolute()
 
-    def test_nonexistent_template_dir_raises(self, tmp_path):
+    def test_relative_template_path_resolved_against_package_dir(
+        self, tmp_path, monkeypatch
+    ):
+        monkeypatch.chdir(tmp_path)
+        relative_path = Path("template.html.j2")
+        relative_path.write_text("<html></html>")
+        config = DocumentConfig(
+            document_metadata={"title": "Resume", "author": "Jane"},
+            resume_data=minimal_resume_data(),
+            template_path=str(relative_path),
+        )
+        assert config.template_path == (package_dir() / relative_path).resolve()
+
+    def test_nonexistent_template_path_raises(self, tmp_path):
         with pytest.raises(ValidationError) as exc_info:
             DocumentConfig(
-                meta={"title": "Resume", "author": "Jane"},
-                template_dir=str(tmp_path / "missing"),
+                document_metadata={"title": "Resume", "author": "Jane"},
+                template_path=str(tmp_path / "missing" / "template.html.j2"),
                 resume_data=minimal_resume_data(),
             )
         assert "does not exist" in str(exc_info.value)
 
-    def test_template_dir_not_a_directory_raises(self, tmp_path):
-        not_a_dir = tmp_path / "template.html.j2"
-        not_a_dir.write_text("<html></html>")
+    def test_template_path_not_a_file_raises(self, tmp_path):
         with pytest.raises(ValidationError) as exc_info:
             DocumentConfig(
-                meta={"title": "Resume", "author": "Jane"},
-                template_dir=str(not_a_dir),
+                document_metadata={"title": "Resume", "author": "Jane"},
+                template_path=str(tmp_path),
                 resume_data=minimal_resume_data(),
             )
-        assert "is not a directory" in str(exc_info.value)
+        assert "file does not exist" in str(exc_info.value)
 
-    def test_template_dir_missing_template_file_raises(self, tmp_path):
-        empty_dir = tmp_path / "empty_template"
-        empty_dir.mkdir()
-        with pytest.raises(ValidationError) as exc_info:
-            DocumentConfig(
-                meta={"title": "Resume", "author": "Jane"},
-                template_dir=str(empty_dir),
-                resume_data=minimal_resume_data(),
-            )
-        assert "must contain a template.html.j2 file" in str(exc_info.value)
-
-    def test_missing_meta_raises(self, tmp_path):
+    def test_missing_document_metadata_raises(self, tmp_path):
         template_dir = make_template_dir(tmp_path)
         with pytest.raises(ValidationError) as exc_info:
             DocumentConfig(
-                template_dir=str(template_dir), resume_data=minimal_resume_data()
+                template_path=str(template_dir / "template.html.j2"),
+                resume_data=minimal_resume_data(),
             )
-        assert "meta" in str(exc_info.value)
+        assert "document_metadata" in str(exc_info.value)
 
     def test_missing_resume_raises(self, tmp_path):
         template_dir = make_template_dir(tmp_path)
         with pytest.raises(ValidationError) as exc_info:
             DocumentConfig(
-                meta={"title": "Resume", "author": "Jane"},
-                template_dir=str(template_dir),
+                document_metadata={"title": "Resume", "author": "Jane"},
+                template_path=str(template_dir / "template.html.j2"),
             )
         assert "resume_data" in str(exc_info.value)
+
+
+class TestLoggingConfig:
+    def test_valid_minimal(self):
+        c = LoggingConfig()
+        assert c.level == "INFO"
+        assert c.file is None
+
+    def test_valid_with_file(self, tmp_path):
+        log_file = tmp_path / "app.log"
+        c = LoggingConfig(file=log_file)
+        assert c.file == log_file.resolve()
+
+    def test_nonexistent_log_file_directory_warns(self, tmp_path):
+        non_existent_dir = tmp_path / "nonexistent"
+        log_file = non_existent_dir / "app.log"
+        with pytest.warns(UserWarning, match="Log file directory does not exist"):
+            c = LoggingConfig(file=log_file)
+        assert c.file is None
+
+
+class TestOutputConfig:
+    def test_valid_minimal(self, tmp_path):
+        c = OutputConfig()
+        assert c.output_dir == Path("output").resolve()
+        assert c.output_filename == "{name}_resume_{date}.pdf"
+        assert c.overwrite is False
+
+    def test_valid_custom_output_dir(self, tmp_path):
+        custom_dir = tmp_path / "my_output"
+        c = OutputConfig(output_dir=custom_dir)
+        assert c.output_dir == custom_dir.resolve()
+
+    def test_output_dir_creation(self, tmp_path):
+        new_dir = tmp_path / "new_output"
+        assert not new_dir.exists()
+        OutputConfig(output_dir=new_dir)
+        assert new_dir.exists()
+        assert new_dir.is_dir()
+
+    def test_output_dir_is_file_warns_creates_new_output_dir(
+        self, tmp_path, monkeypatch
+    ):
+        file_path = create_not_a_dir(tmp_path, monkeypatch)
+        assert not Path("output").exists()
+        with pytest.warns(
+            UserWarning, match="Output path exists but is not a directory"
+        ):
+            c = OutputConfig(output_dir=file_path)
+
+        assert Path("output").exists()
+        assert Path("output").is_dir()
+        assert c.output_dir == Path("output").resolve()
+
+    def test_output_dir_is_file_warns_existing_output_dir(
+        self, tmp_path, tmp_path_factory, monkeypatch
+    ):
+        file_path = create_not_a_dir(tmp_path, monkeypatch)
+        output_dir = Path("output")
+        output_dir.mkdir(exist_ok=True)
+        with pytest.warns(
+            UserWarning, match="Output path exists but is not a directory"
+        ):
+            c = OutputConfig(output_dir=file_path)
+
+        assert output_dir.exists()
+        assert output_dir.is_dir()
+        assert c.output_dir == output_dir.resolve()
+
+
+class TestAppConfig:
+    def test_valid_minimal(self):
+        c = AppConfig()
+        assert c.logging_config.level == "INFO"
+        assert c.logging_config.file is None
+        assert c.output_config.output_dir == Path("output").resolve()
+        assert c.output_config.output_filename == "{name}_resume_{date}.pdf"
+        assert c.output_config.overwrite is False
+        assert c.template_dir == Path("templates").resolve()
+        assert c.data_file == Path("resume_data.yaml").resolve()
+
+    def test_valid_custom_template_dir(self, tmp_path):
+        custom_template_dir = tmp_path / "my_templates"
+        custom_template_dir.mkdir()
+        c = AppConfig(template_dir=custom_template_dir)
+        assert c.template_dir == custom_template_dir.resolve()
+
+    def test_nonexistent_template_dir_warns_and_creates(self, tmp_path):
+        non_existent_dir = tmp_path / "nonexistent_templates"
+        assert not non_existent_dir.exists()
+        with pytest.warns(
+            UserWarning, match="Template directory does not exist, creating"
+        ):
+            c = AppConfig(template_dir=non_existent_dir)
+        assert non_existent_dir.exists()
+        assert non_existent_dir.is_dir()
+        assert c.template_dir == non_existent_dir.resolve()
+
+    def test_template_dir_is_file_warns_and_uses_default_existing(
+        self, tmp_path, monkeypatch
+    ):
+        file_path = create_not_a_dir(tmp_path, monkeypatch)
+        default_dir = Path("templates")
+        default_dir.mkdir(exist_ok=True)
+
+        with pytest.warns(
+            UserWarning, match="Template path exists but is not a directory"
+        ):
+            c = AppConfig(template_dir=file_path)
+        assert default_dir.exists()
+        assert default_dir.is_dir()
+        assert c.template_dir == default_dir.resolve()
+
+    def test_template_dir_is_file_warns_and_creates_default(
+        self, tmp_path, monkeypatch
+    ):
+        file_path = create_not_a_dir(tmp_path, monkeypatch)
+        default_dir = Path("templates")
+        assert not default_dir.exists()
+
+        with pytest.warns(
+            UserWarning, match="Template path exists but is not a directory"
+        ):
+            c = AppConfig(template_dir=file_path)
+        assert default_dir.exists()
+        assert default_dir.is_dir()
+        assert c.template_dir == default_dir.resolve()
+
+    def test_template_dir_existing_relative_path_resolved(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        relative_path = Path("relative_templates")
+        relative_path.mkdir()
+        (relative_path / "template.html.j2").write_text("<html></html>")
+        c = AppConfig(template_dir=relative_path)
+        assert c.template_dir == (package_dir() / relative_path).resolve()
+
+    def test_nonexistent_data_file_warns_and_returns_none(self, tmp_path):
+        missing_file = tmp_path / "missing.yaml"
+        with pytest.warns(UserWarning, match="Data file does not exist"):
+            c = AppConfig(data_file=missing_file)
+        assert c.data_file is None
+
+    def test_data_file_not_a_file_warns_and_returns_none(self, tmp_path):
+        directory_path = tmp_path / "a_directory"
+        directory_path.mkdir()
+        with pytest.warns(UserWarning, match="Data file does not exist"):
+            c = AppConfig(data_file=directory_path)
+        assert c.data_file is None
+
+    def test_valid_absolute_data_file_resolved(self, tmp_path):
+        data_file = tmp_path / "resume_data.yaml"
+        data_file.write_text("personal_info: {}")
+        c = AppConfig(data_file=data_file)
+        assert c.data_file == data_file.resolve()
+
+    def test_relative_data_file_resolved_against_package_dir(
+        self, tmp_path, monkeypatch
+    ):
+        monkeypatch.chdir(tmp_path)
+        relative_file = Path("my_resume_data.yaml")
+        relative_file.write_text("personal_info: {}")
+        c = AppConfig(data_file=relative_file)
+        assert c.data_file == (package_dir() / relative_file).resolve()
 
 
 class TestLoadYamlConfig:
@@ -320,15 +500,15 @@ class TestLoadYamlConfig:
         p.write_text(textwrap.dedent(content))
         return p
 
-    def test_valid_minimal_yaml(self, tmp_path):
+    def test_valid_minimal_document_config_yaml(self, tmp_path):
         template_dir = make_template_dir(tmp_path)
         yaml_file = self._write_yaml(
             tmp_path,
             f"""\
-            meta:
+            document_metadata:
               title: My Resume
               author: Jane Doe
-            template_dir: {template_dir}
+            template_path: {template_dir / "template.html.j2"}
             resume_data:
               personal_info:
                 name: Jane Doe
@@ -336,23 +516,24 @@ class TestLoadYamlConfig:
                 location: New York, NY
             """,
         )
-        config = load_yaml_config(yaml_file)
-        assert config.meta.title == "My Resume"
+        config = load_yaml_config(yaml_file, DocumentConfig)
+        assert isinstance(config, DocumentConfig)
+        assert config.document_metadata.title == "My Resume"
         assert config.resume_data.personal_info.name == "Jane Doe"
 
-    def test_valid_full_yaml(self, tmp_path):
+    def test_valid_full_document_config_yaml(self, tmp_path):
         template_dir = make_template_dir(tmp_path)
         yaml_file = self._write_yaml(
             tmp_path,
             f"""\
-            meta:
+            document_metadata:
               title: Full Resume
               author: Jane Doe
               language: en-US
               keywords:
                 - python
                 - devops
-            template_dir: {template_dir}
+            template_path: {template_dir / "template.html.j2"}
             resume_data:
               personal_info:
                 name: Jane Doe
@@ -386,8 +567,8 @@ class TestLoadYamlConfig:
                   gpa: "3.8"
             """,
         )
-        config = load_yaml_config(yaml_file)
-        assert config.meta.keywords == ["python", "devops"]
+        config = load_yaml_config(yaml_file, DocumentConfig)
+        assert config.document_metadata.keywords == ["python", "devops"]
         assert config.resume_data.personal_info.phone == "555-0100"
         assert len(config.resume_data.experience) == 1
         assert config.resume_data.experience[0].company == "Acme Corp"
@@ -400,9 +581,9 @@ class TestLoadYamlConfig:
         yaml_file = self._write_yaml(
             tmp_path,
             f"""\
-            meta:
+            document_metadata:
               title: Resume
-            template_dir: {template_dir}
+            template_path: {template_dir / "template.html.j2"}
             resume_data:
               personal_info:
                 name: Jane Doe
@@ -411,21 +592,21 @@ class TestLoadYamlConfig:
             """,
         )
         with pytest.raises(ValidationError) as exc_info:
-            load_yaml_config(yaml_file)
+            load_yaml_config(yaml_file, DocumentConfig)
         assert "author" in str(exc_info.value)
 
     def test_nonexistent_file_raises(self, tmp_path):
         with pytest.raises(FileNotFoundError):
-            load_yaml_config(tmp_path / "nonexistent.yaml")
+            load_yaml_config(tmp_path / "nonexistent.yaml", DocumentConfig)
 
-    def test_nonexistent_template_dir_in_yaml_raises(self, tmp_path):
+    def test_nonexistent_template_path_in_yaml_raises(self, tmp_path):
         yaml_file = self._write_yaml(
             tmp_path,
             """\
-            meta:
+            document_metadata:
               title: Resume
               author: Jane
-            template_dir: /does/not/exist
+            template_path: /does/not/exist
             resume_data:
               personal_info:
                 name: Jane
@@ -434,5 +615,22 @@ class TestLoadYamlConfig:
             """,
         )
         with pytest.raises(ValidationError) as exc_info:
-            load_yaml_config(yaml_file)
+            load_yaml_config(yaml_file, DocumentConfig)
         assert "does not exist" in str(exc_info.value)
+
+    def test_load_app_config_yaml(self, tmp_path):
+        template_dir = tmp_path / "templates"
+        template_dir.mkdir()
+        data_file = tmp_path / "resume_data.yaml"
+        data_file.write_text("personal_info: {}")
+        yaml_file = self._write_yaml(
+            tmp_path,
+            f"""\
+            template_dir: {template_dir}
+            data_file: {data_file}
+            """,
+        )
+        config = load_yaml_config(yaml_file, AppConfig)
+        assert isinstance(config, AppConfig)
+        assert config.template_dir == template_dir.resolve()
+        assert config.data_file == data_file.resolve()
