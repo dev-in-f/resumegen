@@ -8,7 +8,7 @@ from resumegen.config import (
     DocumentConfig,
     load_yaml_config,
 )
-from resumegen.renderer import output_html
+from resumegen.renderer import output_html, render_html, render_output_filename
 
 
 def prefer_cli_arg(cli_value, config_value):
@@ -48,7 +48,7 @@ def create_parser() -> argparse.ArgumentParser:
         "--debug", action="store_true", help="Enable debug mode with verbose output."
     )
     parser.add_argument(
-        "--output",
+        "--output-file",
         "-o",
         help="Path to save the generated resume."
         " Uses default from config if not provided.",
@@ -85,8 +85,13 @@ def main():
     document_config = load_yaml_config(data_file, DocumentConfig)
     logging.info("Document configuration loaded...")
 
-    output_path = prefer_cli_arg(args.output, app_config.output_config.output_filename)
-    logging.info(f"Outputting to {output_path}")
+    app_config.output_config.output_filename = prefer_cli_arg(
+        args.output_file, app_config.output_config.output_filename
+    )
+    output_path = Path(app_config.output_config.output_dir) / render_output_filename(
+        document_config, app_config
+    )
+    logging.info(f"Output will be saved to: {output_path}")
     if args.html:
         output_html(document_config, app_config)
     else:

@@ -10,10 +10,10 @@ from resumegen.config import (
     load_yaml_config,
 )
 from resumegen.renderer import (
-    _render_filename,
-    _render_html,
     _sanitize_metadata,
     output_html,
+    render_html,
+    render_output_filename,
 )
 
 
@@ -53,12 +53,12 @@ class TestJinjaRenderer:
 
     @freeze_time("2026-01-01")
     def test_render_filename(self):
-        filename = _render_filename(self.document_config, self.app_config)
+        filename = render_output_filename(self.document_config, self.app_config)
         expected_date = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         assert filename == f"jane_doe_resume_{expected_date}.pdf"
 
     def test_render_html(self):
-        html = _render_html(self.document_config, self.app_config)
+        html = render_html(self.document_config, self.app_config)
         assert "Jane Doe" in html
         assert "Acme Co." in html
         assert "Python" in html
