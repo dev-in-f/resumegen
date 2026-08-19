@@ -53,7 +53,6 @@ def main(
         typer.Option(
             "--output-dir",
             help="Directory to save the generated resume.",
-            envvar="RESUMEGEN_OUTPUT_DIR",
             exists=True,
             file_okay=False,
             dir_okay=True,
@@ -64,7 +63,6 @@ def main(
         typer.Option(
             "--output-template",
             help="Filename template for the generated resume.",
-            envvar="RESUMEGEN_OUTPUT_FILENAME",
         ),
     ] = None,
     overwrite_existing: Annotated[
@@ -76,7 +74,6 @@ def main(
         typer.Option(
             "--template-dir",
             help="Directory containing the resume templates.",
-            envvar="RESUMEGEN_TEMPLATE_DIR",
         ),
     ] = None,
     template_name: Annotated[
@@ -85,7 +82,6 @@ def main(
             "-t",
             "--template",
             help="Filename of the resume template to use.",
-            envvar="RESUMEGEN_TEMPLATE_FILENAME",
         ),
     ] = None,
     document_author: Annotated[
@@ -102,10 +98,12 @@ def main(
         typer.Option(
             "-c",
             "--config",
-            help="Path to the configuration file.",
+            help="Path to the configuration file. "
+            "Defaults to ~/.config/resumegen/config.yaml",
             exists=True,
             mode="r",
             dir_okay=False,
+            show_default=False,
             envvar="RESUMEGEN_DEFAULT_CONFIG_PATH",
         ),
     ] = RESUMEGEN_DEFAULT_CONFIG_PATH,

@@ -5,18 +5,38 @@
 A python tool for generating resumes from YAML data and rendering them to accessible (machine parsable) PDFs.
 Currently, the data structure available is fixed, but the Jinja templates and CSS can be customized.
 
-## Usage
+## Installation
 
-### Installation
+**Dependencies**
 
-#### Dependencies
-
-- [WeasyPrint](https://weasyprint.org/) (for PDF generation)
-  Please follow the instructions for your platform from the [WeasyPrint docs](https://doc.courtbouillon.org/weasyprint/stable/first_steps.html).
+- [WeasyPrint](https://weasyprint.org/) (for PDF generation) Please follow the instructions for your platform from the [WeasyPrint docs](https://doc.courtbouillon.org/weasyprint/stable/first_steps.html).
 - [uv](https://github.com/astral-sh/uv)
 
 ```bash
 uv tool install git+https://codeberg.org/intothebeans/resumegen.git@v1.0.0
+```
+
+## Usage
+
+`resumegen [OPTIONS] DATA_FILE`
+
+**Options**
+
+```
+--log-level                   TEXT       Logging level (e.g., INFO, DEBUG). [env var: RESUMEGEN_LOG_LEVEL]
+--log-file                    PATH       Path to the log file. [env var: RESUMEGEN_LOG_FILE]
+--output-dir                  DIRECTORY  Directory to save the generated resume.
+--output-template             TEXT       Filename template for the generated resume.
+--force               -f                 Allow overwrite of existing output file.
+--template-dir                PATH       Directory containing the resume templates.
+--template            -t      TEXT       Filename of the resume template to use.
+--author                      TEXT       Author of the resume.
+--title                       TEXT       Title of the resume.
+--html                                   Render HTML only, no PDF generation.
+--config              -c      FILE       Path to the configuration file. Defaults to ~/.config/resumegen/config.yaml [env var: RESUMEGEN_DEFAULT_CONFIG_PATH]
+--install-completion                     Install completion for the current shell.
+--show-completion                        Show completion for the current shell, to copy it or customize the installation.
+--help                                   Show this message and exit.
 ```
 
 ### MCP
@@ -49,41 +69,6 @@ The following can only be set using environment variables, and not in the config
 | ----------------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | RESUMEGEN_DATA_DIR            | `~/.config/resumegen`             | Directory where resumegen stores its data, uses the platform-specific user config directory if not set                                   |
 | RESUMEGEN_DEFAULT_CONFIG_PATH | `~/.config/resumegen/config.yaml` | Path to the default configuration file used when no other file is specified, uses the platform-specific user config directory if not set |
-
-### Command Line
-
-```txt
-❯ resumegen --help                                                                                    󰃰 20:53:13
-
- Usage: resumegen [OPTIONS] DATA_FILE
-
-╭─ Arguments ───────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *    data_file      PATH  Path to the data file. [required]                                                       │
-╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Options ─────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --log-level                   TEXT       Logging level (e.g., INFO, DEBUG). [env var: RESUMEGEN_LOG_LEVEL]        │
-│ --log-file                    PATH       Path to the log file. [env var: RESUMEGEN_LOG_FILE]                      │
-│ --output-dir                  DIRECTORY  Directory to save the generated resume. [env var: RESUMEGEN_OUTPUT_DIR]  │
-│ --output-template             TEXT       Filename template for the generated resume.                              │
-│                                          [env var: RESUMEGEN_OUTPUT_FILENAME]                                     │
-│ --force               -f                 Allow overwrite of existing output file.                                 │
-│ --template-dir                PATH       Directory containing the resume templates.                               │
-│                                          [env var: RESUMEGEN_TEMPLATE_DIR]                                        │
-│ --template            -t      TEXT       Filename of the resume template to use.                                  │
-│                                          [env var: RESUMEGEN_TEMPLATE_FILENAME]                                   │
-│ --author                      TEXT       Author of the resume.                                                    │
-│ --title                       TEXT       Title of the resume.                                                     │
-│ --html                                   Render HTML only, no PDF generation.                                     │
-│ --config              -c      FILE       Path to the configuration file.                                          │
-│                                          [env var: RESUMEGEN_CONFIG]                                              │
-│                                          [default: /home/admin/.config/resumegen/config.yaml]                     │
-│ --install-completion                     Install completion for the current shell.                                │
-│ --show-completion                        Show completion for the current shell, to copy it or customize the       │
-│                                          installation.                                                            │
-│ --help                                   Show this message and exit.                                              │
-╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-
-```
 
 ### Config File
 
