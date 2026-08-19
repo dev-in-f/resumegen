@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="{{ meta.language}}">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ meta.title }}</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header>
+        <h1>{{ resume.personal_info.name }}</h1>
+        <div class="contact-info">
+            <span>{{ resume.personal_info.location }}</span> ❖
+            <span>{{ resume.personal_info.email }}</span>
+            {% if resume.personal_info.phone %}
+            ❖ <span>{{ resume.personal_info.phone }}</span>
+            {% endif %}
+        </div>
+        {% if resume.personal_info.linkedin or resume.personal_info.github %}
+        <div class="links">
+            {% if resume.personal_info.linkedin %}
+            <a href="https://www.{{ resume.personal_info.linkedin }}">{{ resume.personal_info.linkedin }}</a>
+            {% endif %}
+            {% if resume.personal_info.github %}
+            ❖ <a href="https://{{ resume.personal_info.github }}">{{ resume.personal_info.github }}</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </header>
+    <section id="statement">
+        <p>{{ resume.statement }}</p>
+    </section>
+    <section id="skills">
+        <h2>Technical Skills</h2>
+        <div class="skills-entries">
+            {% for skill in resume.skills %}
+            <div class="skill">
+                <h3>{{ skill.title }}</h3>
+                <p>{{ skill.skills }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    <section id="experience">
+        <h2>Work Experience</h2>
+        {% for entry in resume.experiences%}
+        <div class="entry">
+            <div class="entry-header">
+                <div class="split">
+                    <h3>{{ entry.title }}</h3>
+                    <span>{{ entry.start_date }}{% if entry.end_date %} – {{ entry.end_date }}{% else %} – Present{%
+                        endif %}</span>
+                </div>
+                <div class="split">
+                    <span><i>{{ entry.company }}</i></span>
+                    <span>{{ entry.location }}</span>
+                </div>
+            </div>
+            <ul>
+                {% for bullet in entry.description_bullets %}
+                <li>{{ bullet}}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endfor%}
+    </section>
+    <section id="projects">
+        <h2>Projects</h2>
+        {% for project in resume.projects %}
+        <div class="entry">
+            <div class="entry-header">
+                <div class="split">
+                    <h3>{{ project.name }}</h3>
+                    {% if project.link or project.timeframe %}
+                    <span>
+                        {% if project.timeframe %}
+                        {{ project.timeframe }}
+                        {% endif %}
+                        {% if project.link %}
+                        | <a href="{{ project.link.url }}">{{ project.link.text }}</a>
+                        {% endif %}
+                    </span>
+                    {% endif %}
+                </div>
+                {% if project.subtitle %}
+                <span class="subtitle">{{ project.subtitle }}</span>
+                {% endif %}
+            </div>
+            <ul>
+                {% for bullet in project.description_bullets %}
+                <li>{{ bullet }}</li>
+                {% endfor %}
+            </ul>
+            <span class="project-technologies">Technologies: {{ project.technologies | join(', ') }}</span>
+        </div>
+        {% endfor %}
+    </section>
+    <section id="education">
+        <h2>Education</h2>
+        {% for education in resume.education %}
+        <div class="entry">
+            <div class="entry-header">
+                <div class="split">
+                    <h3>{{ education.institution }}</h3>
+                    <span>{{ education.completion_date }}</span>
+                </div>
+                <span class="subtitle">{{ education.degree }} {% if education.gpa %} | GPA: {{ education.gpa }}{% endif
+                    %}{% if education.honors %} | Honors: {{ education.honors | join('| ') }}{% endif %}</span>
+            </div>
+            {% if education.description %}
+            <p>{{ education.description }}</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+</body>
+
+</html>
