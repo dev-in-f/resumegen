@@ -54,8 +54,7 @@
         },
         "email": {
           "type": "string",
-          "description": "Email address of the resume owner.",
-          "exclusiveMinimum": 0
+          "description": "Email address of the resume owner."
         },
         "location": {
           "type": "string",

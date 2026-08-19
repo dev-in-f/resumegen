@@ -1,5 +1,5 @@
 ---
-# yaml-language-server: $schema=../schemas/resume-data.schema.json
+# yaml-language-server: $schema=../schemas/resume-data.json
 document_metadata:
   title: Jane Doe's Resume
   author: Jane Doe
