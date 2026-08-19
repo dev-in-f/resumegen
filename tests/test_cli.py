@@ -8,28 +8,6 @@ from resumegen.cli import _override_logging_options, app
 
 runner = CliRunner()
 
-MINIMAL_DATA_YAML = """\
-document_metadata:
-  title: "Test Resume"
-  author: "Jane Doe"
-  language: "en-US"
-personal_info:
-  name: "Jane Doe"
-  email: "jane@example.com"
-  location: "New York, NY"
-experience:
-  - title: "Engineer"
-    company: "Acme"
-    location: "New York, NY"
-    start_date: "2020-01"
-    description_bullets:
-      - "Did things"
-skill_sections:
-  - title: "Languages"
-    skills:
-      - "Python"
-"""
-
 MINIMAL_CONFIG_YAML = """\
 template_dir: "templates"
 """
@@ -66,24 +44,10 @@ class TestLoggingOverrides:
 
 
 @pytest.fixture
-def data_file(tmp_path):
-    p = tmp_path / "resume.yaml"
-    p.write_text(MINIMAL_DATA_YAML)
-    return p
-
-
-@pytest.fixture
 def config_file(tmp_path):
     p = tmp_path / "config.yaml"
     p.write_text(MINIMAL_CONFIG_YAML)
     return p
-
-
-@pytest.fixture
-def output_dir(tmp_path):
-    d = tmp_path / "output"
-    d.mkdir()
-    return d
 
 
 class TestMainCommand:
@@ -319,3 +283,264 @@ class TestMainCommand:
         assert result.exit_code == 0
         call_args = mock_render.call_args.args
         assert call_args[2] == "my_{author}.pdf"
+
+
+class TestTailorCommand:
+    @patch("resumegen.cli.tailor_resume")
+    def test_basic_tailor_call(
+        self,
+        mock_tailor,
+        master_data_file,
+        job_description_file,
+        config_file,
+        output_dir,
+    ):
+        mock_tailor.return_value = output_dir / "tailored.yaml"
+        result = runner.invoke(
+            app,
+            [
+                "tailor",
+                str(master_data_file),
+                str(job_description_file),
+                "--config",
+                str(config_file),
+                "--output-dir",
+                str(output_dir),
+                "--model",
+                "gpt-4o",
+            ],
+        )
+        assert result.exit_code == 0
+        mock_tailor.assert_called_once()
+
+    @patch("resumegen.cli.score_master_data")
+    @patch("resumegen.cli.tailor_resume")
+    def test_score_flag_calls_score_master_data(
+        self,
+        mock_tailor,
+        mock_score,
+        master_data_file,
+        job_description_file,
+        config_file,
+        output_dir,
+    ):
+        mock_tailor.return_value = output_dir / "tailored.yaml"
+        result = runner.invoke(
+            app,
+            [
+                "tailor",
+                str(master_data_file),
+                str(job_description_file),
+                "--config",
+                str(config_file),
+                "--output-dir",
+                str(output_dir),
+                "--model",
+                "gpt-4o",
+                "--score",
+            ],
+        )
+        assert result.exit_code == 0
+        mock_score.assert_called_once()
+
+    @patch("resumegen.cli.tailor_resume")
+    def test_track_cost_flag_forwarded(
+        self,
+        mock_tailor,
+        master_data_file,
+        job_description_file,
+        config_file,
+        output_dir,
+    ):
+        mock_tailor.return_value = output_dir / "tailored.yaml"
+        result = runner.invoke(
+            app,
+            [
+                "tailor",
+                str(master_data_file),
+                str(job_description_file),
+                "--config",
+                str(config_file),
+                "--output-dir",
+                str(output_dir),
+                "--model",
+                "gpt-4o",
+                "--track-cost",
+            ],
+        )
+        assert result.exit_code == 0
+        _, kwargs = mock_tailor.call_args
+        call_args = mock_tailor.call_args.args
+        assert call_args[4] is True  # track_cost positional arg
+
+    @patch("resumegen.cli.tailor_resume")
+    def test_save_flag_forwarded(
+        self,
+        mock_tailor,
+        master_data_file,
+        job_description_file,
+        config_file,
+        output_dir,
+    ):
+        # --save is the second flag in "--no-save/--save", so it sets save_to_file=False
+        mock_tailor.return_value = "raw yaml content"
+        result = runner.invoke(
+            app,
+            [
+                "tailor",
+                str(master_data_file),
+                str(job_description_file),
+                "--config",
+                str(config_file),
+                "--output-dir",
+                str(output_dir),
+                "--model",
+                "gpt-4o",
+                "--save",
+            ],
+        )
+        assert result.exit_code == 0
+        call_args = mock_tailor.call_args.args
+        assert (
+            call_args[5] is False
+        )  # --save is the "no-op" (second) flag, sets save_to_file=False
+
+    @patch("resumegen.cli.tailor_resume")
+    def test_job_title_forwarded(
+        self,
+        mock_tailor,
+        master_data_file,
+        job_description_file,
+        config_file,
+        output_dir,
+    ):
+        mock_tailor.return_value = output_dir / "tailored.yaml"
+        result = runner.invoke(
+            app,
+            [
+                "tailor",
+                str(master_data_file),
+                str(job_description_file),
+                "--config",
+                str(config_file),
+                "--output-dir",
+                str(output_dir),
+                "--model",
+                "gpt-4o",
+                "--job-title",
+                "Senior Engineer",
+            ],
+        )
+        assert result.exit_code == 0
+        call_args = mock_tailor.call_args.args
+        assert call_args[6] == "Senior Engineer"
+
+    @patch("resumegen.cli.tailor_resume")
+    def test_output_filename_forwarded(
+        self,
+        mock_tailor,
+        master_data_file,
+        job_description_file,
+        config_file,
+        output_dir,
+    ):
+        mock_tailor.return_value = output_dir / "tailored.yaml"
+        result = runner.invoke(
+            app,
+            [
+                "tailor",
+                str(master_data_file),
+                str(job_description_file),
+                "--config",
+                str(config_file),
+                "--output-dir",
+                str(output_dir),
+                "--model",
+                "gpt-4o",
+                "-o",
+                "custom_{date}.yaml",
+            ],
+        )
+        assert result.exit_code == 0
+        call_args = mock_tailor.call_args.args
+        assert call_args[8] == "custom_{date}.yaml"
+
+    @patch("resumegen.cli.tailor_resume")
+    def test_base_url_forwarded(
+        self,
+        mock_tailor,
+        master_data_file,
+        job_description_file,
+        config_file,
+        output_dir,
+    ):
+        mock_tailor.return_value = output_dir / "tailored.yaml"
+        result = runner.invoke(
+            app,
+            [
+                "tailor",
+                str(master_data_file),
+                str(job_description_file),
+                "--config",
+                str(config_file),
+                "--output-dir",
+                str(output_dir),
+                "--model",
+                "mymodel",
+                "--base-url",
+                "http://localhost:11434",
+            ],
+        )
+        assert result.exit_code == 0
+        call_args = mock_tailor.call_args.args
+        assert call_args[7] == "http://localhost:11434"
+
+    @patch("resumegen.cli.tailor_resume")
+    def test_exits_with_code_1_on_exception(
+        self,
+        mock_tailor,
+        master_data_file,
+        job_description_file,
+        config_file,
+        output_dir,
+    ):
+        mock_tailor.side_effect = RuntimeError("tailoring failed")
+        result = runner.invoke(
+            app,
+            [
+                "tailor",
+                str(master_data_file),
+                str(job_description_file),
+                "--config",
+                str(config_file),
+                "--output-dir",
+                str(output_dir),
+                "--model",
+                "gpt-4o",
+            ],
+        )
+        assert result.exit_code == 1
+
+    @patch("resumegen.cli.tailor_resume")
+    def test_model_from_config_used_when_not_on_cli(
+        self, mock_tailor, master_data_file, job_description_file, tmp_path, output_dir
+    ):
+        config = tmp_path / "config_with_model.yaml"
+        config.write_text("model: gpt-3.5-turbo\n")
+        mock_tailor.return_value = output_dir / "tailored.yaml"
+        result = runner.invoke(
+            app,
+            [
+                "tailor",
+                str(master_data_file),
+                str(job_description_file),
+                "--config",
+                str(config),
+                "--output-dir",
+                str(output_dir),
+            ],
+            env={"RESUMEGEN_MODEL": ""},
+        )
+        assert result.exit_code == 0
+        call_args = mock_tailor.call_args.args
+        assert call_args[3] == "gpt-3.5-turbo"

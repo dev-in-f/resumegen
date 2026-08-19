@@ -3,6 +3,58 @@ import pytest
 
 from resumegen.config import DocumentMetadata, ResumeData
 
+MINIMAL_DATA_YAML = """\
+document_metadata:
+  title: "Test Resume"
+  author: "Jane Doe"
+  language: "en-US"
+personal_info:
+  name: "Jane Doe"
+  email: "jane@example.com"
+  location: "New York, NY"
+experience:
+  - title: "Engineer"
+    company: "Acme"
+    location: "New York, NY"
+    start_date: "2020-01"
+    description_bullets:
+      - "Did things"
+skill_sections:
+  - title: "Languages"
+    skills:
+      - "Python"
+"""
+
+MINIMAL_JOB_DESCRIPTION = "Software Engineer at Acme Corp\nWe build things."
+
+
+@pytest.fixture
+def data_file(tmp_path):
+    p = tmp_path / "resume.yaml"
+    p.write_text(MINIMAL_DATA_YAML)
+    return p
+
+
+@pytest.fixture
+def master_data_file(tmp_path):
+    p = tmp_path / "master.yaml"
+    p.write_text(MINIMAL_DATA_YAML)
+    return p
+
+
+@pytest.fixture
+def job_description_file(tmp_path):
+    p = tmp_path / "job.md"
+    p.write_text(MINIMAL_JOB_DESCRIPTION)
+    return p
+
+
+@pytest.fixture
+def output_dir(tmp_path):
+    d = tmp_path / "output"
+    d.mkdir()
+    return d
+
 
 @pytest.fixture
 def minimal_resume_data(minimal_document_metadata) -> ResumeData:
