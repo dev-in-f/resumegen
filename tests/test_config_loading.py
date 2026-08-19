@@ -282,40 +282,38 @@ class TestDocumentConfig:
         )
         assert Path(config.template_path).is_absolute()
 
-    def test_relative_template_path_resolved_against_package_dir(
-        self, tmp_path, monkeypatch, minimal_resume_data, minimal_document_metadata
+    def test_relative_template_path_stored_as_path(
+        self, minimal_resume_data, minimal_document_metadata
     ):
-        monkeypatch.chdir(tmp_path)
-        relative_path = Path("template.html.j2")
-        relative_path.write_text("<html></html>")
         config = DocumentConfig(
             document_metadata=minimal_document_metadata,
             resume_data=minimal_resume_data,
-            template_path=str(relative_path),
+            template_path="template.html.j2",
         )
-        assert config.template_path == (package_dir() / relative_path).resolve()
+        assert config.template_path == Path("template.html.j2")
+        assert config.template_path.name == "template.html.j2"
 
-    def test_nonexistent_template_path_raises(
+    def test_nonexistent_template_path_accepted(
         self, tmp_path, minimal_resume_data, minimal_document_metadata
     ):
-        with pytest.raises(ValidationError) as exc_info:
-            DocumentConfig(
-                document_metadata=minimal_document_metadata,
-                template_path=str(tmp_path / "missing" / "template.html.j2"),
-                resume_data=minimal_resume_data,
-            )
-        assert "does not exist" in str(exc_info.value)
+        # Existence is validated at render time by Jinja2, not at config parse time
+        config = DocumentConfig(
+            document_metadata=minimal_document_metadata,
+            template_path=str(tmp_path / "missing" / "template.html.j2"),
+            resume_data=minimal_resume_data,
+        )
+        assert config.template_path.name == "template.html.j2"
 
-    def test_template_path_not_a_file_raises(
+    def test_template_path_directory_accepted(
         self, tmp_path, minimal_resume_data, minimal_document_metadata
     ):
-        with pytest.raises(ValidationError) as exc_info:
-            DocumentConfig(
-                document_metadata=minimal_document_metadata,
-                template_path=str(tmp_path),
-                resume_data=minimal_resume_data,
-            )
-        assert "file does not exist" in str(exc_info.value)
+        # Existence is validated at render time by Jinja2, not at config parse time
+        config = DocumentConfig(
+            document_metadata=minimal_document_metadata,
+            template_path=str(tmp_path),
+            resume_data=minimal_resume_data,
+        )
+        assert config.template_path == tmp_path
 
     def test_missing_document_metadata_raises(self, template_dir, minimal_resume_data):
         with pytest.raises(ValidationError) as exc_info:
@@ -585,14 +583,14 @@ class TestLoadYamlConfig:
         with pytest.raises(FileNotFoundError):
             load_yaml_config(tmp_path / "nonexistent.yaml", DocumentConfig)
 
-    def test_nonexistent_template_path_in_yaml_raises(self, tmp_path):
+    def test_template_path_in_yaml_loaded_as_path(self, tmp_path):
         yaml_file = self._write_yaml(
             tmp_path,
             """\
             document_metadata:
               title: Resume
               author: Jane
-            template_path: /does/not/exist
+            template_path: /does/not/exist/template.html.j2
             resume_data:
               personal_info:
                 name: Jane
@@ -600,9 +598,8 @@ class TestLoadYamlConfig:
                 location: NYC
             """,
         )
-        with pytest.raises(ValidationError) as exc_info:
-            load_yaml_config(yaml_file, DocumentConfig)
-        assert "does not exist" in str(exc_info.value)
+        config = load_yaml_config(yaml_file, DocumentConfig)
+        assert config.template_path.name == "template.html.j2"
 
     def test_load_app_config_yaml(self, tmp_path):
         template_dir = tmp_path / "templates"
