@@ -8,6 +8,13 @@ from pydantic import BaseModel, field_validator
 # ruff: noqa: UP045
 
 
+# ▄▄▄▄▄▄▄                                       ▄▄▄▄▄▄▄               ▄▄
+# ███▀▀███▄                                    ███▀▀▀▀▀              ██  ▀▀
+# ███▄▄███▀ ▄█▀█▄ ▄█▀▀▀ ██ ██ ███▄███▄ ▄█▀█▄   ███      ▄███▄ ████▄ ▀██▀ ██  ▄████
+# ███▀▀██▄  ██▄█▀ ▀███▄ ██ ██ ██ ██ ██ ██▄█▀   ███      ██ ██ ██ ██  ██  ██  ██ ██
+# ███  ▀███ ▀█▄▄▄ ▄▄▄█▀ ▀██▀█ ██ ██ ██ ▀█▄▄▄   ▀███████ ▀███▀ ██ ██  ██  ██▄ ▀████
+#                                                                               ██
+#                                                                             ▀▀▀
 class DocumentMeta(BaseModel):
     title: str
     author: str
@@ -92,7 +99,35 @@ class DocumentConfig(BaseModel):
     resume_data: ResumeData
 
 
-def load_yaml_config(file_path: Path) -> DocumentConfig:
+#   ▄▄▄▄                  ▄▄▄▄▄▄▄               ▄▄
+# ▄██▀▀██▄               ███▀▀▀▀▀              ██  ▀▀
+# ███  ███ ████▄ ████▄   ███      ▄███▄ ████▄ ▀██▀ ██  ▄████
+# ███▀▀███ ██ ██ ██ ██   ███      ██ ██ ██ ██  ██  ██  ██ ██
+# ███  ███ ████▀ ████▀   ▀███████ ▀███▀ ██ ██  ██  ██▄ ▀████
+#          ██    ██                                       ██
+#          ▀▀    ▀▀                                     ▀▀▀
+
+
+class LoggingConfig(BaseModel):
+    level: str = "INFO"
+    file: Optional[Path] = None
+
+
+class OutputConfig(BaseModel):
+    output_dir: Path = Path("output")
+    output_filename: str = "{name}_resume_{date}.pdf"
+    overwrite: bool = False
+
+
+class AppConfig(BaseModel):
+    logging_config: LoggingConfig
+    output_config: OutputConfig
+    template_dir: Path = Path("templates")
+    data_file: Path = Path("resume_data.yaml")  # prefer set by CLI arg
+
+
+def load_yaml_config(file_path: Path, config_type: type[BaseModel]) -> BaseModel:
+    """Load a YAML configuration as an AppConfig or DocumentConfig."""
     with open(file_path) as f:
         data = yaml.safe_load(f)
         logging.debug(f"Loaded YAML data: {data}")
