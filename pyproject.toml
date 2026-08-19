@@ -21,7 +21,7 @@ dependencies = [
 ]
 
 [project.scripts]
-resumegen = "resumegen.cli"
+resumegen = "resumegen.cli:app"
 resumegen-mcp = "resumegen.mcp_server:main"
 
 [build-system]
