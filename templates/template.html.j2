@@ -1,41 +1,41 @@
 <!DOCTYPE html>
-<html lang="{{ meta.language}}">
+<html lang="{{ document_metadata.language }}">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ meta.title }}</title>
+    <title>{{ document_metadata.title }}</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
     <header>
-        <h1>{{ resume.personal_info.name }}</h1>
+        <h1>{{ resume_data.personal_info.name }}</h1>
         <div class="contact-info">
-            <span>{{ resume.personal_info.location }}</span> ❖
-            <span>{{ resume.personal_info.email }}</span>
-            {% if resume.personal_info.phone %}
-            ❖ <span>{{ resume.personal_info.phone }}</span>
+            <span>{{ resume_data.personal_info.location }}</span> ❖
+            <span>{{ resume_data.personal_info.email }}</span>
+            {% if resume_data.personal_info.phone %}
+            ❖ <span>{{ resume_data.personal_info.phone }}</span>
             {% endif %}
         </div>
-        {% if resume.personal_info.linkedin or resume.personal_info.github %}
+        {% if resume_data.personal_info.linkedin or resume_data.personal_info.github %}
         <div class="links">
-            {% if resume.personal_info.linkedin %}
-            <a href="https://www.{{ resume.personal_info.linkedin }}">{{ resume.personal_info.linkedin }}</a>
+            {% if resume_data.personal_info.linkedin %}
+            <a href="https://www.{{ resume_data.personal_info.linkedin }}">{{ resume_data.personal_info.linkedin }}</a>
             {% endif %}
-            {% if resume.personal_info.github %}
-            ❖ <a href="https://{{ resume.personal_info.github }}">{{ resume.personal_info.github }}</a>
+            {% if resume_data.personal_info.github %}
+            ❖ <a href="https://{{ resume_data.personal_info.github }}">{{ resume_data.personal_info.github }}</a>
             {% endif %}
         </div>
         {% endif %}
     </header>
     <section id="statement">
-        <p>{{ resume.statement }}</p>
+        <p>{{ resume_data.statement }}</p>
     </section>
     <section id="skills">
         <h2>Technical Skills</h2>
         <div class="skills-entries">
-            {% for skill in resume.skills %}
+            {% for skill in resume_data.skill_sections %}
             <div class="skill">
                 <h3>{{ skill.title }}</h3>
                 <p>{{ skill.skills }}</p>
@@ -45,7 +45,7 @@
     </section>
     <section id="experience">
         <h2>Work Experience</h2>
-        {% for entry in resume.experiences%}
+        {% for entry in resume_data.experience %}
         <div class="entry">
             <div class="entry-header">
                 <div class="split">
@@ -64,15 +64,15 @@
                 {% endfor %}
             </ul>
         </div>
-        {% endfor%}
+        {% endfor %}
     </section>
     <section id="projects">
         <h2>Projects</h2>
-        {% for project in resume.projects %}
+        {% for project in resume_data.projects %}
         <div class="entry">
             <div class="entry-header">
                 <div class="split">
-                    <h3>{{ project.name }}</h3>
+                    <h3>{{ project.title }}</h3>
                     {% if project.link or project.timeframe %}
                     <span>
                         {% if project.timeframe %}
@@ -99,7 +99,7 @@
     </section>
     <section id="education">
         <h2>Education</h2>
-        {% for education in resume.education %}
+        {% for education in resume_data.education %}
         <div class="entry">
             <div class="entry-header">
                 <div class="split">
