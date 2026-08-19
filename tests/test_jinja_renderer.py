@@ -51,8 +51,7 @@ class TestSanitizeMetadata:
 
 class TestJinjaRenderer:
     @pytest.fixture(autouse=True)
-    def setup(self, tmp_path):
-        fixtures_dir = Path(__file__).parent / "fixtures"
+    def setup(self, tmp_path, fixtures_dir):
         self.config = Config(
             output_dir=Path(tmp_path) / "output",
             template_dir=fixtures_dir,

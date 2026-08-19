@@ -1,4 +1,3 @@
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pikepdf
@@ -50,10 +49,10 @@ class TestPdfXmpMetadataInjection:
 
 class TestRenderPdf:
     @pytest.fixture(autouse=True)
-    def setup(self, tmp_path):
+    def setup(self, tmp_path, fixtures_dir):
         self.config = Config(
             output_dir=tmp_path,
-            template_dir=Path(__file__).parent / "fixtures",
+            template_dir=fixtures_dir,
             template_name="test_template.html.j2",
         )
 

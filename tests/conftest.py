@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pikepdf
 import pytest
 
@@ -91,6 +93,11 @@ def minimal_document_metadata() -> DocumentMetadata:
         keywords=["python", "engineer"],
         language="en-US",
     )
+
+
+@pytest.fixture
+def fixtures_dir() -> Path:
+    return Path(__file__).parent / "fixtures"
 
 
 @pytest.fixture
