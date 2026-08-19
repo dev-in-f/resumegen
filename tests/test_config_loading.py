@@ -121,13 +121,13 @@ class TestPersonalInfo:
 
 class TestSkillsSubsection:
     def test_valid(self):
-        s = SkillsSubsection(title="Languages", skills=["Python", "Go"])
+        s = SkillsSubsection(title="Languages", skills="Python, Go")
         assert s.title == "Languages"
-        assert s.skills == ["Python", "Go"]
+        assert s.skills == "Python, Go"
 
     def test_empty_skills_list(self):
-        s = SkillsSubsection(title="Languages", skills=[])
-        assert s.skills == []
+        s = SkillsSubsection(title="Languages", skills="")
+        assert s.skills == ""
 
     def test_missing_title_raises(self):
         with pytest.raises(ValidationError):
@@ -354,7 +354,7 @@ class TestOutputConfig:
     def test_valid_minimal(self, tmp_path):
         c = OutputConfig()
         assert c.output_dir == Path("output").resolve()
-        assert c.output_filename == "{name}_resume_{date}.pdf"
+        assert c.output_filename == "{author}_resume_{date}.pdf"
         assert c.overwrite is False
 
     def test_valid_custom_output_dir(self, tmp_path):
@@ -405,7 +405,7 @@ class TestAppConfig:
         assert c.logging_config.level == "INFO"
         assert c.logging_config.file is None
         assert c.output_config.output_dir == Path("output").resolve()
-        assert c.output_config.output_filename == "{name}_resume_{date}.pdf"
+        assert c.output_config.output_filename == "{author}_resume_{date}.pdf"
         assert c.output_config.overwrite is False
         assert c.template_dir == Path("templates").resolve()
         assert c.data_file == Path("resume_data.yaml").resolve()
@@ -545,9 +545,7 @@ class TestLoadYamlConfig:
               statement: Experienced engineer.
               skill_sections:
                 - title: Languages
-                  skills:
-                    - Python
-                    - Go
+                  skills: Python Go
               experience:
                 - title: Software Engineer
                   company: Acme Corp
