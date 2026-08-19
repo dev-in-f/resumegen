@@ -83,17 +83,6 @@ class ResumeData(BaseModel):
 class DocumentConfig(BaseModel):
     document_metadata: DocumentMeta
     template_path: Path = Path("template.html.j2")
-
-    @field_validator("template_path", mode="before")
-    @classmethod
-    def resolve_template_path(cls, v):
-        path = Path(v)
-        if not path.exists() or not path.is_file():
-            raise ValueError(f"Template file does not exist: {path}")
-        if not path.is_absolute():
-            path = Path(__file__).parent / path
-        return path.resolve()
-
     resume_data: ResumeData
 
 
