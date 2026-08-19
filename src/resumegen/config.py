@@ -34,7 +34,7 @@ class PersonalInfo(BaseModel):
 
 class SkillsSubsection(BaseModel):
     title: str
-    skills: list[str]
+    skills: str
 
 
 class ExperienceEntry(BaseModel):
@@ -205,9 +205,8 @@ class AppConfig(BaseModel):
         return path.resolve()
 
 
-def load_yaml_config(file_path: Path, config_type: type[BaseModel]) -> BaseModel:
-    """Load a YAML configuration as an AppConfig or DocumentConfig."""
+def load_yaml_config[T: BaseModel](file_path: Path, model: type[T]) -> T:
     with open(file_path) as f:
         data = yaml.safe_load(f)
-        logging.debug(f"Loaded YAML data: {data}")
-    return config_type(**data)
+        logging.debug(f"Loaded YAML from {file_path}: {data}")
+    return model(**data)
