@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 
 import click
+import litellm
 from pydantic import ValidationError
 
 from resumegen.config import (
@@ -15,7 +16,7 @@ from resumegen.config import (
 from resumegen.logging import color_message, setup_logging
 from resumegen.pdf import PdfError, render_pdf
 from resumegen.renderer import RenderError, output_html
-from resumegen.tailor import score_master_data, tailor_resume
+from resumegen.tailor import tailor_resume
 
 logger = logging.getLogger(__name__)
 setup_logging(logger)
@@ -220,14 +221,6 @@ def render(
     envvar="RESUMEGEN_BASE_URL",
 )
 @click.option(
-    "-s",
-    "--score",
-    is_flag=True,
-    default=False,
-    help="Score how relevant the data from the master "
-    "data file is to the job description. ",
-)
-@click.option(
     "--track-cost",
     is_flag=True,
     default=False,
@@ -240,7 +233,7 @@ def render(
     " If not provided, the first line of the job description will be used.",
 )
 @click.option(
-    "--no-save/--save",
+    "--save/--no-save",
     "save_to_file",
     is_flag=True,
     default=True,
@@ -266,7 +259,6 @@ def tailor(
     job_title: str | None,
     model: str | None,
     base_url: str | None,
-    score: bool,
     track_cost: bool,
     save_to_file: bool,
     log_level: str | None,
@@ -274,16 +266,13 @@ def tailor(
     output_dir: Path | None,
     config_path: Path,
     output_filename: str | None = None,
-) -> str | Path:
+):
     _override_logging_options(log_level, log_file)
     try:
         app_config = load_yaml_to_data_model(config_path, Config)
-        logger.debug("Configuration loaded successfully.")
+        logger.debug("Configuration loaded.")
         tailor_model = model or app_config.model or os.getenv("RESUMEGEN_MODEL", "")
-        if score:
-            logger.info("Scoring master data against job description...")
-            score_master_data()
-        return tailor_resume(
+        result = tailor_resume(
             master_data_file,
             job_description_file,
             output_dir or app_config.output_dir,
@@ -294,7 +283,34 @@ def tailor(
             base_url or app_config.base_url,
             output_filename,
         )
-
+        if save_to_file:
+            click.echo(color_message(f"💾  Tailored data saved to: {result}", "green"))
+        else:
+            click.echo(result)
+    except ValidationError as e:
+        logger.error(f"Data model validation failed: {e}")
+        logger.error(
+            "Ensure your data and configuration files match the expected schema."
+        )
+        raise click.exceptions.Exit(code=1) from e
+    except ValueError as e:
+        logger.error(f"Tailoring failed: {e}")
+        raise click.exceptions.Exit(code=1) from e
+    except litellm.BadRequestError as e:  # type: ignore
+        logger.error(f"Language model request failed: {e}")
+        raise click.exceptions.Exit(code=1) from e
+    except litellm.Timeout as e:  # type: ignore
+        logger.error(f"Language model request timed out: {e}")
+        raise click.exceptions.Exit(code=1) from e
+    except litellm.RateLimitError as e:  # type: ignore
+        logger.error(f"Language model rate limit exceeded: {e}")
+        raise click.exceptions.Exit(code=1) from e
+    except litellm.BudgetExceededError as e:  # type: ignore
+        logger.error(f"Language model budget exceeded: {e}")
+        raise click.exceptions.Exit(code=1) from e
+    except litellm.APIError as e:  # type: ignore
+        logger.error(f"Language model API error: {e}")
+        raise click.exceptions.Exit(code=1) from e
     except Exception as e:
         logger.exception(f"Tailoring failed with the following error: {e}")
         raise click.exceptions.Exit(code=1) from e

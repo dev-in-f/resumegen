@@ -1,6 +1,8 @@
 import logging
 from unittest.mock import patch
 
+import litellm
+import pydantic
 import pytest
 from click.testing import CliRunner
 
@@ -378,36 +380,6 @@ class TestTailorCommand:
         assert result.exit_code == 0
         mock_tailor.assert_called_once()
 
-    @patch("resumegen.cli.score_master_data")
-    @patch("resumegen.cli.tailor_resume")
-    def test_score_flag_calls_score_master_data(
-        self,
-        mock_tailor,
-        mock_score,
-        master_data_file,
-        job_description_file,
-        config_file,
-        output_dir,
-    ):
-        mock_tailor.return_value = output_dir / "tailored.yaml"
-        result = runner.invoke(
-            app,
-            [
-                "tailor",
-                str(master_data_file),
-                str(job_description_file),
-                "--config",
-                str(config_file),
-                "--output-dir",
-                str(output_dir),
-                "--model",
-                "gpt-4o",
-                "--score",
-            ],
-        )
-        assert result.exit_code == 0
-        mock_score.assert_called_once()
-
     @patch("resumegen.cli.tailor_resume")
     def test_track_cost_flag_forwarded(
         self,
@@ -436,7 +408,7 @@ class TestTailorCommand:
         assert result.exit_code == 0
         _, kwargs = mock_tailor.call_args
         call_args = mock_tailor.call_args.args
-        assert call_args[4] is True  # track_cost positional arg
+        assert call_args[4] is True
 
     @patch("resumegen.cli.tailor_resume")
     def test_save_flag_forwarded(
@@ -447,7 +419,6 @@ class TestTailorCommand:
         config_file,
         output_dir,
     ):
-        # --save is the second flag in "--no-save/--save", so it sets save_to_file=False
         mock_tailor.return_value = "raw yaml content"
         result = runner.invoke(
             app,
@@ -461,14 +432,12 @@ class TestTailorCommand:
                 str(output_dir),
                 "--model",
                 "gpt-4o",
-                "--save",
+                "--no-save",
             ],
         )
         assert result.exit_code == 0
         call_args = mock_tailor.call_args.args
-        assert (
-            call_args[5] is False
-        )  # --save is the "no-op" (second) flag, sets save_to_file=False
+        assert call_args[5] is False
 
     @patch("resumegen.cli.tailor_resume")
     def test_job_title_forwarded(
@@ -609,3 +578,200 @@ class TestTailorCommand:
         assert result.exit_code == 0
         call_args = mock_tailor.call_args.args
         assert call_args[3] == "gpt-3.5-turbo"
+
+    def test_validation_error_exits_with_code_1(
+        self, master_data_file, job_description_file, config_file, output_dir
+    ):
+        with patch(
+            "resumegen.cli.tailor_resume",
+            side_effect=pydantic.ValidationError("Validation failed", []),
+        ):
+            result = runner.invoke(
+                app,
+                [
+                    "tailor",
+                    str(master_data_file),
+                    str(job_description_file),
+                    "--config",
+                    str(config_file),
+                    "--output-dir",
+                    str(output_dir),
+                    "--model",
+                    "gpt-4o",
+                ],
+            )
+            assert result.exit_code == 1
+            assert "Validation failed" in result.output
+
+    def test_value_error_exits_with_code_1(
+        self,
+        master_data_file,
+        job_description_file,
+        config_file,
+        output_dir,
+        monkeypatch,
+    ):
+        monkeypatch.setenv("RESUMEGEN_MODEL", "")
+        result = runner.invoke(
+            app,
+            [
+                "tailor",
+                str(master_data_file),
+                str(job_description_file),
+                "--config",
+                str(config_file),
+                "--output-dir",
+                str(output_dir),
+                "--model",
+                "",
+            ],
+        )
+        assert result.exit_code == 1
+        assert "Tailoring failed:" in result.output
+
+    def test_bad_request_error_exits_with_code_1(
+        self, master_data_file, job_description_file, config_file, output_dir
+    ):
+        with patch(
+            "resumegen.cli.tailor_resume",
+            side_effect=litellm.BadRequestError("Bad request", "model", "provider"),
+        ):
+            result = runner.invoke(
+                app,
+                [
+                    "tailor",
+                    str(master_data_file),
+                    str(job_description_file),
+                    "--config",
+                    str(config_file),
+                    "--output-dir",
+                    str(output_dir),
+                    "--model",
+                    "gpt-4o",
+                ],
+            )
+            assert result.exit_code == 1
+            assert "Bad request" in result.output
+
+    def test_timeout_error_exits_with_code_1(
+        self, master_data_file, job_description_file, config_file, output_dir
+    ):
+        with patch(
+            "resumegen.cli.tailor_resume",
+            side_effect=litellm.Timeout("Request timed out", "model", "provider"),
+        ):
+            result = runner.invoke(
+                app,
+                [
+                    "tailor",
+                    str(master_data_file),
+                    str(job_description_file),
+                    "--config",
+                    str(config_file),
+                    "--output-dir",
+                    str(output_dir),
+                    "--model",
+                    "gpt-4o",
+                ],
+            )
+            assert result.exit_code == 1
+            assert "request timed out" in result.output
+
+    def test_rate_limit_error_exits_with_code_1(
+        self, master_data_file, job_description_file, config_file, output_dir
+    ):
+        with patch(
+            "resumegen.cli.tailor_resume",
+            side_effect=litellm.RateLimitError(
+                "Rate limit exceeded", "model", "provider"
+            ),
+        ):
+            result = runner.invoke(
+                app,
+                [
+                    "tailor",
+                    str(master_data_file),
+                    str(job_description_file),
+                    "--config",
+                    str(config_file),
+                    "--output-dir",
+                    str(output_dir),
+                    "--model",
+                    "gpt-4o",
+                ],
+            )
+            assert result.exit_code == 1
+            assert "rate limit exceeded" in result.output
+
+    def test_budget_exceeded_error_exits_with_code_1(
+        self, master_data_file, job_description_file, config_file, output_dir
+    ):
+        with patch(
+            "resumegen.cli.tailor_resume",
+            side_effect=litellm.BudgetExceededError(10, 1, "Budget exceeded"),
+        ):
+            result = runner.invoke(
+                app,
+                [
+                    "tailor",
+                    str(master_data_file),
+                    str(job_description_file),
+                    "--config",
+                    str(config_file),
+                    "--output-dir",
+                    str(output_dir),
+                    "--model",
+                    "gpt-4o",
+                ],
+            )
+            assert result.exit_code == 1
+            assert "budget exceeded" in result.output
+
+    def test_api_error_exits_with_code_1(
+        self, master_data_file, job_description_file, config_file, output_dir
+    ):
+        with patch(
+            "resumegen.cli.tailor_resume",
+            side_effect=litellm.APIError(
+                500, "API error occurred", "provider", "model"
+            ),
+        ):
+            result = runner.invoke(
+                app,
+                [
+                    "tailor",
+                    str(master_data_file),
+                    str(job_description_file),
+                    "--config",
+                    str(config_file),
+                    "--output-dir",
+                    str(output_dir),
+                    "--model",
+                    "gpt-4o",
+                ],
+            )
+            assert result.exit_code == 1
+            assert "API error" in result.output
+
+    def test_exception_exits_with_code_1(
+        self, master_data_file, job_description_file, config_file, output_dir
+    ):
+        with patch(
+            "resumegen.cli.tailor_resume", side_effect=RuntimeError("Unexpected error")
+        ):
+            result = runner.invoke(
+                app,
+                [
+                    "tailor",
+                    str(master_data_file),
+                    str(job_description_file),
+                    "--config",
+                    str(config_file),
+                    "--output-dir",
+                    str(output_dir),
+                    "--model",
+                    "gpt-4o",
+                ],
+            )
+            assert result.exit_code == 1
+            assert "Unexpected error" in result.output

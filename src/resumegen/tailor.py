@@ -114,40 +114,35 @@ def tailor_resume(
     else:
         job_description_text = job_description
 
-    try:
-        litellm.success_callback = [_track_cost] if track_cost else []
-        response = completion(
-            model=model,
-            max_tokens=4000,
-            messages=[
-                {"role": "system", "content": _build_taylor_system_prompt()},
-                {
-                    "role": "user",
-                    "content": f"Master Resume Data:\n{resume_data}\n\n"
-                    f"Job Description:\n{job_description_text}"
-                    f"\n\nOutput Resume Data Schema:\n{schema}",
-                },
-            ],
-            base_url=base_url,
+    litellm.success_callback = [_track_cost] if track_cost else []
+    response = completion(
+        model=model,
+        max_tokens=4000,
+        messages=[
+            {"role": "system", "content": _build_taylor_system_prompt()},
+            {
+                "role": "user",
+                "content": f"Master Resume Data:\n{resume_data}\n\n"
+                f"Job Description:\n{job_description_text}"
+                f"\n\nOutput Resume Data Schema:\n{schema}",
+            },
+        ],
+        base_url=base_url,
+    )
+    response_text = response.choices[0].message.content  # type: ignore
+    if not response_text:
+        raise ValueError("Received empty response from the model.")
+    if output_filename or save_to_file:
+        template_context = {
+            "job_title": job_title,
+            "job_description_text": job_description_text,
+            "model": model,
+        }
+        return _save_to_file(
+            output_dir, output_filename, response_text, template_context
         )
-        response_text = response.choices[0].message.content  # type: ignore
-        if not response_text:
-            raise ValueError("Received empty response from the model.")
-        if output_filename or save_to_file:
-            template_context = {
-                "job_title": job_title,
-                "job_description_text": job_description_text,
-                "model": model,
-            }
-            return _save_to_file(
-                output_dir, output_filename, response_text, template_context
-            )
-        return response_text
-
-    except Exception as e:
-        logging.exception(f"Unexpected error: {e}")
-        raise
+    return response_text
 
 
 def score_master_data():
-    pass
+    pass  # pragma: no cover
