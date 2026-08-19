@@ -2,16 +2,18 @@ from unittest.mock import patch
 
 import pytest
 
-from resumegen.__init__ import install_default_config
-from resumegen.__init__ import main as main_entrypoint
+from resumegen._bootstrap import _install_default_config as install_default_config
+from resumegen._bootstrap import bootstrap
 
 
 @pytest.fixture
 def bootstrap_paths(tmp_path, monkeypatch):
     data_dir = tmp_path / "data"
     config_path = tmp_path / "config.yaml"
-    monkeypatch.setattr("resumegen.__init__.RESUMEGEN_DATA_DIR", data_dir)
-    monkeypatch.setattr("resumegen.__init__.RESUMEGEN_DEFAULT_CONFIG_PATH", config_path)
+    monkeypatch.setattr("resumegen._bootstrap.RESUMEGEN_DATA_DIR", data_dir)
+    monkeypatch.setattr(
+        "resumegen._bootstrap.RESUMEGEN_DEFAULT_CONFIG_PATH", config_path
+    )
     return data_dir, config_path
 
 
@@ -39,14 +41,12 @@ class TestInstallDefaultConfig:
         assert data_dir.is_dir()
 
 
-class TestMainEntrypoint:
-    def test_calls_app(self, bootstrap_paths):
-        with patch("resumegen.__init__.app") as mock_app:
-            main_entrypoint()
-        mock_app.assert_called_once()
-
-    def test_install_runs_before_app(self, bootstrap_paths):
-        _, config_path = bootstrap_paths
-        with patch("resumegen.__init__.app"):
-            main_entrypoint()
-        assert config_path.exists()
+class TestBootstrap:
+    @patch("resumegen._bootstrap.dotenv.load_dotenv")
+    @patch("resumegen._bootstrap._install_default_config")
+    def test_bootstrap_calls_load_dotenv_and_install_default_config(
+        self, mock_install_default_config, mock_load_dotenv
+    ):
+        bootstrap()
+        mock_load_dotenv.assert_called_once_with(".env")
+        mock_install_default_config.assert_called_once()

@@ -21,7 +21,8 @@ dependencies = [
 ]
 
 [project.scripts]
-resumegen = "resumegen:main"
+resumegen = "resumegen.cli"
+resumegen-mcp = "resumegen.mcp_server:main"
 
 [build-system]
 requires = ["hatchling", "uv-dynamic-versioning"]

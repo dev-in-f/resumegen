@@ -6,6 +6,7 @@ import click
 import litellm
 from pydantic import ValidationError
 
+from resumegen._bootstrap import bootstrap
 from resumegen.core.config import (
     RESUMEGEN_DEFAULT_CONFIG_PATH,
     Config,
@@ -19,6 +20,7 @@ from resumegen.core.logging import color_message, setup_logging
 from resumegen.core.pdf import render_pdf
 from resumegen.core.tailor import tailor_resume
 
+bootstrap()
 logger = logging.getLogger(__name__)
 setup_logging(logger)
 
