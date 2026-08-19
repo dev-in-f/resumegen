@@ -1,11 +1,23 @@
 import logging
+import os
 import warnings
+from importlib import resources
 from pathlib import Path
 from typing import Optional
 
 import yaml
-from pydantic import BaseModel, field_validator
+from platformdirs import user_config_path, user_data_path
+from pydantic import BaseModel, Field, field_validator
 
+RESUMEGEN_DATA_DIR = Path(
+    os.getenv("RESUMEGEN_DATA_DIR", user_data_path("resumegen", ensure_exists=True))
+)
+RESUMEGEN_DEFAULT_CONFIG_PATH = Path(
+    os.getenv(
+        "RESUMEGEN_DEFAULT_CONFIG_PATH",
+        user_config_path("resumegen", ensure_exists=True) / "config.yaml",
+    )
+)
 # ruff: noqa: UP045
 
 
@@ -81,6 +93,52 @@ class ResumeData(BaseModel):
     education: list[EducationEntry] = []
 
 
+# ▄▄▄      ▄▄▄  ▄▄▄▄▄▄▄ ▄▄▄▄▄▄▄
+# ████▄  ▄████ ███▀▀▀▀▀ ███▀▀███▄
+# ███▀████▀███ ███      ███▄▄███▀
+# ███  ▀▀  ███ ███      ███▀▀▀▀
+# ███      ███ ▀███████ ███
+
+
+class SessionConfig(BaseModel):
+    output_dir: Path = RESUMEGEN_DATA_DIR / "output"
+    output_filename: str = "{author}_resume_{date}.pdf"
+    template_name: str = "template.html.j2"
+    overwrite_existing: bool = False
+
+
+# ▄▄▄      ▄▄▄                                 ▄▄▄▄▄▄
+# ████▄  ▄████              ██                 ███▀▀██▄        ██
+# ███▀████▀███  ▀▀█▄ ▄█▀▀▀ ▀██▀▀ ▄█▀█▄ ████▄   ███  ███  ▀▀█▄ ▀██▀▀ ▀▀█▄
+# ███  ▀▀  ███ ▄█▀██ ▀███▄  ██   ██▄█▀ ██ ▀▀   ███  ███ ▄█▀██  ██  ▄█▀██
+# ███      ███ ▀█▄██ ▄▄▄█▀  ██   ▀█▄▄▄ ██      ██████▀  ▀█▄██  ██  ▀█▄██
+
+
+class MasterProjectEntry(ProjectEntry):
+    tags: list[str] = []
+
+
+class MasterSkillEntry(BaseModel):
+    name: str
+    proficiency: Optional[int] = None
+    category: Optional[str] = None
+
+    @field_validator("proficiency")
+    @classmethod
+    def validate_proficiency(cls, v):
+        if v is not None and (v < 1 or v > 5):
+            raise ValueError("Proficiency must be between 1 and 5")
+        return v
+
+
+class MasterData(BaseModel):
+    projects: list[MasterProjectEntry]
+    skills: list[MasterSkillEntry]
+    experience: list[ExperienceEntry]
+    education: list[EducationEntry]
+    personal_info: PersonalInfo
+
+
 #  ▄▄▄▄▄▄▄               ▄▄
 # ███▀▀▀▀▀              ██  ▀▀
 # ███      ▄███▄ ████▄ ▀██▀ ██  ▄████
@@ -93,10 +151,15 @@ class ResumeData(BaseModel):
 class Config(BaseModel):
     log_level: str = "INFO"
     log_file: Optional[Path] = None
-    output_dir: Path = Path("output").resolve()
+    output_dir: Path = Field(
+        default=RESUMEGEN_DATA_DIR / "output", validate_default=True
+    )
     output_filename: str = "{author}_resume_{date}.pdf"
     overwrite_existing: bool = False
-    template_dir: Path = Path("templates").resolve()
+    template_dir: Path = Field(
+        default_factory=lambda: Path(str(resources.files("resumegen") / "templates")),
+        validate_default=True,
+    )
     template_name: str = "template.html.j2"
 
     @field_validator("template_dir")

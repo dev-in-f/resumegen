@@ -1,0 +1,142 @@
+personal_info:
+  name: Jane A. Doe
+  email: jane.doe@example.com
+  phone: "+1 (555) 867-5309"
+  location: San Francisco, CA
+  linkedin: linkedin.com/in/janedoe
+  github: github.com/janedoe
+
+skills:
+  - name: Python
+    proficiency: 5
+    category: Programming Languages
+    notes: Primary language for backend and data work
+  - name: TypeScript
+    proficiency: 4
+    category: Programming Languages
+  - name: Rust
+    proficiency: 2
+    category: Programming Languages
+    notes: Learning on side projects
+  - name: PostgreSQL
+    proficiency: 4
+    category: Databases
+  - name: Redis
+    proficiency: 3
+    category: Databases
+  - name: Docker
+    proficiency: 4
+    category: DevOps
+  - name: Kubernetes
+    proficiency: 3
+    category: DevOps
+  - name: AWS
+    proficiency: 4
+    category: Cloud
+    notes: EC2, S3, Lambda, RDS, ECS
+  - name: React
+    proficiency: 3
+    category: Frontend
+  - name: FastAPI
+    proficiency: 5
+    category: Frameworks
+
+experience:
+  - title: Senior Software Engineer
+    company: Acme Corp
+    location: San Francisco, CA
+    start_date: "2022-03"
+    end_date: null
+    description_bullets:
+      - Led migration of monolithic Django app to microservices, reducing p99 latency by 40%
+      - Designed and implemented an event-driven pipeline processing 2M+ events per day using Kafka and Python
+      - Mentored 3 junior engineers and conducted weekly architecture reviews
+      - Reduced infrastructure costs by 25% by right-sizing ECS tasks and implementing spot instance strategies
+
+  - title: Software Engineer
+    company: Widget Factory Inc.
+    location: Austin, TX
+    start_date: "2019-06"
+    end_date: "2022-02"
+    description_bullets:
+      - Built REST APIs with FastAPI serving 10K+ daily active users
+      - Automated CI/CD pipelines with GitHub Actions, cutting deploy time from 45 to 8 minutes
+      - Implemented full-text search using Elasticsearch, improving search relevance scores by 30%
+      - Collaborated with product and design to ship 6 major features per quarter
+
+  - title: Junior Developer
+    company: Startup Labs
+    location: Remote
+    start_date: "2017-08"
+    end_date: "2019-05"
+    description_bullets:
+      - Developed internal tooling in Python to automate report generation, saving 10 hours/week
+      - Maintained React frontend and resolved 50+ bug reports across two product lines
+      - Wrote unit and integration tests, bringing coverage from 40% to 80%
+
+projects:
+  - title: OpenMetrics Dashboard
+    timeframe: "2023"
+    link:
+      text: github.com/janedoe/openmetrics
+      url: https://github.com/janedoe/openmetrics
+    subtitle: Open-source observability dashboard
+    description_bullets:
+      - Built a self-hosted metrics dashboard with real-time charting using WebSockets
+      - Supports Prometheus, InfluxDB, and custom data sources via a plugin API
+      - 400+ GitHub stars and 12 external contributors
+    technologies:
+      - Python
+      - FastAPI
+      - React
+      - PostgreSQL
+      - Docker
+    tags:
+      - open-source
+      - observability
+      - side-project
+
+  - title: ResumeCraft CLI
+    timeframe: "2022"
+    link:
+      text: github.com/janedoe/resumecraft
+      url: https://github.com/janedoe/resumecraft
+    subtitle: YAML-driven resume generator
+    description_bullets:
+      - Generates PDF resumes from YAML data files using Jinja2 templates and Playwright
+      - Supports multiple templates and per-job customization via a tailor subcommand
+    technologies:
+      - Python
+      - Jinja2
+      - Pydantic
+      - Playwright
+    tags:
+      - cli
+      - productivity
+      - side-project
+
+  - title: Home Lab Kubernetes Cluster
+    timeframe: "2021 – present"
+    subtitle: Personal k8s cluster running on Raspberry Pi 5 nodes
+    description_bullets:
+      - Runs self-hosted services including Gitea, Grafana, and Jellyfin
+      - Uses Flux CD for GitOps-based continuous delivery
+    technologies:
+      - Kubernetes
+      - Flux CD
+      - Helm
+      - Raspberry Pi
+    tags:
+      - homelab
+      - devops
+
+education:
+  - degree: B.S. Computer Science
+    institution: State University
+    location: Austin, TX
+    completion_date: "May 2017"
+    gpa: "3.7"
+    honors:
+      - Cum Laude
+      - Dean's List (4 semesters)
+    description: Concentration in Systems and Distributed Computing
