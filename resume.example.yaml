@@ -1,5 +1,6 @@
 ---
 # yaml-language-server: $schema=./resume-schema.json
+template_path: template.html.j2
 document_metadata:
   title: Jane Doe's Resume
   author: Jane Doe

@@ -235,6 +235,11 @@
           }
         }
       }
+    },
+    "template_path": {
+      "type": "string",
+      "description": "Path to the HTML template file used for rendering the resume.",
+      "default": "template.html.j2"
     }
   }
 }
