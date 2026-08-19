@@ -3,7 +3,7 @@ import logging
 import click
 
 from resumegen._bootstrap import bootstrap
-from resumegen._cli import render, render_html, scan_pdf, tailor
+from resumegen._cli import convert_html, render, scan_pdf, tailor
 from resumegen._core.logging import setup_logging
 
 bootstrap()
@@ -18,7 +18,7 @@ app = click.Group(
         "render": render,
         "tailor": tailor,
         "scan-pdf": scan_pdf,
-        "render-html": render_html,
+        "convert-html": convert_html,
     }
 )
 

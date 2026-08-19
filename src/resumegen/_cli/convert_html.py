@@ -6,6 +6,7 @@ import click
 from resumegen._cli.shared import (
     _load_yaml_to_data_model,
     _override_logging_options,
+    _split_output_path,
     logging_options,
     render_options,
 )
@@ -24,10 +25,10 @@ logger = logging.getLogger("resumegen.cli")
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
 )
 @click.option(
-    "--base-url",
+    "--assets-dir",
     type=click.Path(exists=True, dir_okay=True, file_okay=False, path_type=Path),
     default=None,
-    help="Base URL for resolving relative paths in the HTML file, "
+    help="Directory for resolving relative paths in the HTML file, "
     "i.e. stylesheets, images, etc. "
     "If not provided, the template directory from the config file or"
     " the directory of the HTML file will be used.",
@@ -37,13 +38,14 @@ logger = logging.getLogger("resumegen.cli")
     "--output-name",
     type=str,
     default=None,
-    help="Output filename for the generated PDF. "
-    "Uses the input filename if not provided.",
+    help="Output filename for the generated PDF. May include a directory "
+    "(e.g. 'out/resume.pdf'), which is created if it doesn't exist and "
+    "takes precedence over --output-dir. Uses the input filename if not provided.",
 )
-def render_html(
+def convert_html(
     html_file: Path,
     config_path: Path,
-    base_url: Path | None,
+    assets_dir: Path | None,
     output_dir: Path | None,
     log_level: str | None,
     log_file: Path | None,
@@ -51,17 +53,18 @@ def render_html(
     output_name: str | None,
     overwrite_existing: bool,
 ):
+    """Convert an existing HTML file to a PDF."""
     _override_logging_options(log_level, log_file, verbose)
     try:
         config = _load_yaml_to_data_model(config_path, Config)
-        if not base_url:
-            base_url = config.template_dir or html_file.parent
-        if not output_dir:
-            output_dir = config.output_dir
+        if not assets_dir:
+            assets_dir = config.template_dir or html_file.parent
+        embedded_dir, output_name = _split_output_path(output_name, output_dir)
+        working_output_dir = embedded_dir or output_dir or config.output_dir
         render_pdf_from_html(
             html_file,
-            base_url,
-            output_dir,
+            assets_dir,
+            working_output_dir,
             output_name,
             overwrite_existing,
         )
