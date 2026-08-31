@@ -22,6 +22,7 @@ app = click.Group(
     },
     context_settings={"max_content_width": 120},
 )
+app = click.version_option(package_name="resumegen")(app)
 
 if __name__ == "__main__":  # pragma no cover
     app()
