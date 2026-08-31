@@ -39,6 +39,16 @@ class TestSanitizeMetadata:
         result = _sanitize_metadata(meta)
         assert result["description"] == "senior_engineer"
 
+    def test_invalid_characters_stripped(self):
+        meta = DocumentMetadata(title="Resume: Senior/Staff Eng?! (2026)", author="A")
+        result = _sanitize_metadata(meta)
+        assert result["title"] == "resume_seniorstaff_eng_2026"
+
+    def test_long_field_truncated(self):
+        meta = DocumentMetadata(title="A" * 300, author="A")
+        result = _sanitize_metadata(meta)
+        assert len(result["title"]) == 50
+
 
 class TestFormatOutputFilename:
     def test_formats_filename_with_metadata(self):
