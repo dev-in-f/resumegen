@@ -19,7 +19,8 @@ app = click.Group(
         "tailor": tailor,
         "scan-pdf": scan_pdf,
         "convert-html": convert_html,
-    }
+    },
+    context_settings={"max_content_width": 120},
 )
 
 if __name__ == "__main__":  # pragma no cover
