@@ -65,7 +65,7 @@ def render_html(
     output_path = output_path.with_suffix(".html")
     if output_path.exists() and not override_existing:
         raise FileExistsError(f"File already exists: {output_path}")
-    output_dir.mkdir(parents=True, exist_ok=True)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w") as f:
         f.write(html_content)
     logger.debug("Saved HTML content to: %s", output_path)
