@@ -19,10 +19,20 @@ def _track_cost(kwargs, completion_response, start_time, end_time):
         logger.info("Cost information not available in the response.")
 
 
-def _build_taylor_system_prompt() -> str:
+def _build_taylor_system_prompt(feedback: bool = False) -> str:
     with resources.path(
         "resumegen", "schemas/master-data.json"
     ) as master_resume_schema:
+        rationale_instructions = (
+            """
+
+    Rationale has been explicitly requested, so also include YAML comments
+    (lines starting with #) placed near the relevant sections, explaining
+    why you selected or reworded specific highlights, skills, or projects
+    relative to the job description. Keep each comment concise and specific."""
+            if feedback
+            else ""
+        )
         return f"""
     You are an expert resume writer. You will be given:
     1. A master data file containing all of a candidate's experience, skills,
@@ -49,7 +59,16 @@ def _build_taylor_system_prompt() -> str:
 
     The output must be valid YAML that conforms to the included resume JSON schema.
     Do not wrap the YAML with a code block or fencing. Do not include backticks.
-    Just return the raw YAML text."""
+    Just return the raw YAML text.{rationale_instructions}"""
+
+
+def _extract_yaml_comments(text: str) -> str:
+    comment_lines = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            comment_lines.append(stripped.lstrip("#").strip())
+    return "\n".join(comment_lines)
 
 
 def _generate_filename(
@@ -113,6 +132,7 @@ def tailor_resume(
     save_to_file: bool = True,
     output_filename: str | None = None,
     overwrite_existing: bool = False,
+    feedback: bool = False,
 ) -> tuple[str, Path | None]:
     if model == "":
         raise ValueError(
@@ -135,7 +155,7 @@ def tailor_resume(
         model=model,
         max_tokens=4000,
         messages=[
-            {"role": "system", "content": _build_taylor_system_prompt()},
+            {"role": "system", "content": _build_taylor_system_prompt(feedback)},
             {
                 "role": "user",
                 "content": f"Master Resume Data:\n{resume_data}\n\n"

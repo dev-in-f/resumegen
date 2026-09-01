@@ -15,7 +15,7 @@ from resumegen._cli.shared import (
 )
 from resumegen._core.config import Config
 from resumegen._core.logging import Spinner, color_message
-from resumegen._core.tailor import tailor_resume
+from resumegen._core.tailor import _extract_yaml_comments, tailor_resume
 
 logger = logging.getLogger("resumegen.cli")
 
@@ -71,6 +71,13 @@ logger = logging.getLogger("resumegen.cli")
     "filename can use the placeholders {date}, {job_title}, {model}, and "
     "{first_line} for dynamic content.",
 )
+@click.option(
+    "--feedback",
+    is_flag=True,
+    default=False,
+    help="Ask the model to explain its tailoring rationale (as YAML comments "
+    "in the output) and print that rationale to the console.",
+)
 def tailor(
     master_data_file: Path,
     job_description_file: Path,
@@ -87,6 +94,7 @@ def tailor(
     interactive: bool = True,
     save_to_file: bool = True,
     output_filename_template: str | None = None,
+    feedback: bool = False,
 ):
     """Tailor resume data based on a job description using a LLM."""
     _override_logging_options(log_level, log_file, verbose)
@@ -110,6 +118,7 @@ def tailor(
                 save_to_file,
                 output_filename_template,
                 overwrite_existing,
+                feedback,
             )
         if interactive:
             if output_path is not None:
@@ -119,6 +128,13 @@ def tailor(
             else:
                 click.echo(color_message("💾  Tailored data:", "green"))
                 click.echo(response_text)
+            if feedback:
+                rationale = _extract_yaml_comments(response_text)
+                click.echo(color_message("🧠  Tailoring rationale:", "cyan"))
+                click.echo(
+                    rationale
+                    or "(No rationale comments were included in the response.)"
+                )
         else:
             click.echo(response_text)
     except ValidationError as e:
