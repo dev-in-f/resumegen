@@ -244,11 +244,10 @@ class TestRenderCommand:
         assert call_args[2] == "my_{author}.pdf"
 
     @patch("resumegen._cli.render.render_pdf")
-    def test_output_template_with_dir_overrides_output_dir(
+    def test_output_template_with_dir_nests_under_output_dir(
         self, mock_render, data_file, config_file, output_dir, tmp_path
     ):
         mock_render.return_value = (output_dir / "resume.pdf", None)
-        embedded_dir = tmp_path / "embedded" / "sub"
         result = runner.invoke(
             app,
             [
@@ -259,13 +258,13 @@ class TestRenderCommand:
                 "--output-dir",
                 str(output_dir),
                 "--output-template",
-                str(embedded_dir / "my_{author}.pdf"),
+                "{title}/my_{author}.pdf",
             ],
         )
         assert result.exit_code == 0
         call_args = mock_render.call_args.args
-        assert call_args[1] == embedded_dir
-        assert call_args[2] == "my_{author}.pdf"
+        assert call_args[1] == output_dir
+        assert call_args[2] == "{title}/my_{author}.pdf"
 
     @patch("resumegen._cli.render.render_html")
     def test_html_only_no_interactive_save_prints_content_and_saves(

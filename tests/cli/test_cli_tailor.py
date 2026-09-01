@@ -157,7 +157,7 @@ class TestTailorCommand:
         assert call_args[8] == "custom_{date}.yaml"
 
     @patch("resumegen._cli.tailor.tailor_resume")
-    def test_output_template_with_dir_overrides_output_dir(
+    def test_output_template_with_dir_nests_under_output_dir(
         self,
         mock_tailor,
         master_data_file,
@@ -167,7 +167,6 @@ class TestTailorCommand:
         tmp_path,
     ):
         mock_tailor.return_value = ("raw yaml content", output_dir / "tailored.yaml")
-        embedded_dir = tmp_path / "embedded" / "sub"
         result = runner.invoke(
             app,
             [
@@ -181,13 +180,13 @@ class TestTailorCommand:
                 "--model",
                 "gpt-4o",
                 "--output-template",
-                str(embedded_dir / "custom_{date}.yaml"),
+                "{job_title}/custom_{date}.yaml",
             ],
         )
         assert result.exit_code == 0
         call_args = mock_tailor.call_args.args
-        assert call_args[2] == embedded_dir
-        assert call_args[8] == "custom_{date}.yaml"
+        assert call_args[2] == output_dir
+        assert call_args[8] == "{job_title}/custom_{date}.yaml"
 
     @patch("resumegen._cli.tailor.tailor_resume")
     def test_no_interactive_save_prints_content_and_saves(

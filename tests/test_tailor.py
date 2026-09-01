@@ -84,7 +84,7 @@ class TestSaveToFile:
             "job_description_text": "",
         }
         path = _save_to_file(output_dir, "resume_{job_title}.yaml", "content", context)
-        assert "Engineer" in path.name
+        assert "engineer" in path.name
 
     def test_output_filename_with_first_line_placeholder(self, output_dir):
         context = {
