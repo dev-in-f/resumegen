@@ -1,6 +1,10 @@
+import itertools
 import logging
 import os
 import sys
+import threading
+import time
+from typing import ClassVar
 
 import dotenv
 
@@ -27,7 +31,7 @@ class ColorLogFormatter(logging.Formatter):
     bold_red = "\x1b[31;1m"
     reset = "\x1b[0m"
     format_template = "%(asctime)s [%(name)s] - %(levelname)s - %(message)s"
-    FORMATS = {
+    FORMATS: ClassVar[dict[int, str]] = {
         logging.DEBUG: grey + format_template + reset,
         logging.INFO: grey + format_template + reset,
         logging.WARNING: yellow + format_template + reset,
@@ -60,6 +64,44 @@ def setup_logging(logger: logging.Logger):
     ch.setLevel(os.getenv("RESUMEGEN_LOG_LEVEL", logging.INFO))
     ch.setFormatter(ColorLogFormatter())
     logger.addHandler(ch)
+
+
+class Spinner:
+    """Displays a spinning indicator with a message while a block runs.
+
+    No-ops when `enabled` is False or stdout isn't a terminal.
+    """
+
+    frames = ("⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏")
+    interval = 0.08
+
+    def __init__(self, message: str, enabled: bool = True):
+        self.message = message
+        self.enabled = enabled and sys.stdout.isatty()
+        self._stop_event = threading.Event()
+        self._thread: threading.Thread | None = None
+
+    def _spin(self):
+        for frame in itertools.cycle(self.frames):
+            if self._stop_event.is_set():
+                break
+            sys.stdout.write(f"\r{color_message(frame, 'cyan')}  {self.message}")
+            sys.stdout.flush()
+            time.sleep(self.interval)
+
+    def __enter__(self):
+        if self.enabled:
+            self._thread = threading.Thread(target=self._spin, daemon=True)
+            self._thread.start()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.enabled and self._thread:
+            self._stop_event.set()
+            self._thread.join()
+            sys.stdout.write("\r" + " " * (len(self.message) + 4) + "\r")
+            sys.stdout.flush()
+        return False
 
 
 def color_message(message: str, color: str) -> str:

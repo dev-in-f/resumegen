@@ -12,6 +12,7 @@ from resumegen._cli.shared import (
 )
 from resumegen._core.config import Config
 from resumegen._core.exceptions import RenderError
+from resumegen._core.logging import Spinner, color_message
 from resumegen._core.pdf import render_pdf_from_html
 
 logger = logging.getLogger("resumegen.cli")
@@ -20,6 +21,14 @@ logger = logging.getLogger("resumegen.cli")
 @click.command()
 @logging_options
 @render_options
+@click.option(
+    "--interactive/--no-interactive",
+    "interactive",
+    is_flag=True,
+    default=True,
+    help="Print decorated status messages. With --no-interactive, only the "
+    "output path is printed to stdout, for use in scripts/pipelines.",
+)
 @click.argument(
     "html_file",
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
@@ -52,22 +61,32 @@ def convert_html(
     verbose: bool,
     output_name: str | None,
     overwrite_existing: bool,
+    interactive: bool = True,
 ):
     """Convert an existing HTML file to a PDF."""
     _override_logging_options(log_level, log_file, verbose)
     try:
         config = _load_yaml_to_data_model(config_path, Config)
+        if interactive:
+            click.echo(color_message("⚙️  Configuration loaded successfully!", "green"))
         if not assets_dir:
             assets_dir = config.template_dir or html_file.parent
         embedded_dir, output_name = _split_output_path(output_name, output_dir)
         working_output_dir = embedded_dir or output_dir or config.output_dir
-        render_pdf_from_html(
-            html_file,
-            assets_dir,
-            working_output_dir,
-            output_name,
-            overwrite_existing,
-        )
+        with Spinner(f"🖨️  Converting {html_file} to PDF...", enabled=interactive):
+            output_path = render_pdf_from_html(
+                html_file,
+                assets_dir,
+                working_output_dir,
+                output_name,
+                overwrite_existing,
+            )
+        if interactive:
+            click.echo(
+                color_message(f"👻  PDF generated at: {output_path.resolve()}", "green")
+            )
+        else:
+            click.echo(str(output_path.resolve()))
     except FileExistsError as e:
         logger.exception("File already exists")
         raise click.exceptions.Exit(code=1) from e

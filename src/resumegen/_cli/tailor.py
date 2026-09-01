@@ -15,7 +15,7 @@ from resumegen._cli.shared import (
     render_options,
 )
 from resumegen._core.config import Config
-from resumegen._core.logging import color_message
+from resumegen._core.logging import Spinner, color_message
 from resumegen._core.tailor import tailor_resume
 
 logger = logging.getLogger("resumegen.cli")
@@ -99,18 +99,22 @@ def tailor(
             output_filename_template, output_dir
         )
         working_output_dir = embedded_dir or output_dir or app_config.output_dir
-        response_text, output_path = tailor_resume(
-            master_data_file,
-            job_description_file,
-            working_output_dir,
-            tailor_model,
-            base_url or app_config.base_url,
-            job_title,
-            track_cost,
-            save_to_file,
-            output_filename_template,
-            overwrite_existing,
-        )
+        with Spinner(
+            f"🤖  Requesting tailored resume from '{tailor_model}'...",
+            enabled=interactive,
+        ):
+            response_text, output_path = tailor_resume(
+                master_data_file,
+                job_description_file,
+                working_output_dir,
+                tailor_model,
+                base_url or app_config.base_url,
+                job_title,
+                track_cost,
+                save_to_file,
+                output_filename_template,
+                overwrite_existing,
+            )
         if interactive:
             if output_path is not None:
                 click.echo(

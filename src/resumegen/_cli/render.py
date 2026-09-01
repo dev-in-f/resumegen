@@ -19,7 +19,7 @@ from resumegen._core.config import (
 )
 from resumegen._core.exceptions import PdfError, RenderError
 from resumegen._core.html_rendering import render_html
-from resumegen._core.logging import color_message
+from resumegen._core.logging import Spinner, color_message
 from resumegen._core.pdf import render_pdf
 
 logger = logging.getLogger("resumegen.cli")
@@ -117,17 +117,16 @@ def render(
         )
 
         if html_only:
-            if interactive:
-                click.echo(color_message("🖨️  Rendering HTML only...", "cyan"))
-            html_content, output_path = render_html(
-                resume_data,
-                working_output_dir,
-                working_output_filename,
-                working_template_name,
-                working_template_dir,
-                save_to_file,
-                overwrite_existing,
-            )
+            with Spinner("🖨️  Rendering HTML only...", enabled=interactive):
+                html_content, output_path = render_html(
+                    resume_data,
+                    working_output_dir,
+                    working_output_filename,
+                    working_template_name,
+                    working_template_dir,
+                    save_to_file,
+                    overwrite_existing,
+                )
             if interactive:
                 if output_path is not None:
                     click.echo(
@@ -141,16 +140,15 @@ def render(
             else:
                 click.echo(html_content)
         else:
-            if interactive:
-                click.echo(color_message("🖨️  Rendering PDF...", "cyan"))
-            output, report = render_pdf(
-                resume_data,
-                working_output_dir,
-                working_output_filename,
-                working_template_name,
-                working_template_dir,
-                overwrite_existing or config_data.overwrite_existing,
-            )
+            with Spinner("🖨️  Rendering PDF...", enabled=interactive):
+                output, report = render_pdf(
+                    resume_data,
+                    working_output_dir,
+                    working_output_filename,
+                    working_template_name,
+                    working_template_dir,
+                    overwrite_existing or config_data.overwrite_existing,
+                )
             if interactive:
                 click.echo(
                     color_message(f"👻  PDF generated at: {output.resolve()}", "green")
