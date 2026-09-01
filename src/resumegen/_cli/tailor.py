@@ -9,7 +9,6 @@ from pydantic import ValidationError
 from resumegen._cli.shared import (
     _load_yaml_to_data_model,
     _override_logging_options,
-    _split_output_path,
     interactive_options,
     logging_options,
     render_options,
@@ -66,11 +65,11 @@ logger = logging.getLogger("resumegen.cli")
     "--output-template",
     "output_filename_template",
     type=str,
-    help="Override the default output filename template, optionally prefixed with "
-    "a directory (e.g. 'out/tailored_{job_title}.yaml'); the directory is created "
-    "if it doesn't exist and takes precedence over --output-dir. The filename can "
-    "use the placeholders {date}, {job_title}, {model}, and {first_line} for "
-    "dynamic content.",
+    help="Override the default output filename template, optionally including a "
+    "directory portion (e.g. '{job_title}/tailored.yaml'); any directory in the "
+    "rendered result is created under --output-dir if it doesn't exist. The "
+    "filename can use the placeholders {date}, {job_title}, {model}, and "
+    "{first_line} for dynamic content.",
 )
 def tailor(
     master_data_file: Path,
@@ -95,10 +94,7 @@ def tailor(
         app_config = _load_yaml_to_data_model(config_path, Config)
         logger.debug("Configuration loaded.")
         tailor_model = model or app_config.model or os.getenv("RESUMEGEN_MODEL", "")
-        embedded_dir, output_filename_template = _split_output_path(
-            output_filename_template, output_dir
-        )
-        working_output_dir = embedded_dir or output_dir or app_config.output_dir
+        working_output_dir = output_dir or app_config.output_dir
         with Spinner(
             f"🤖  Requesting tailored resume from '{tailor_model}'...",
             enabled=interactive,
