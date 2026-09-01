@@ -6,6 +6,8 @@ from pathlib import Path
 import litellm
 from litellm import completion
 
+from resumegen._core.formatting import _sanitize_filename_component
+
 logger = logging.getLogger(__name__)
 
 
@@ -54,11 +56,11 @@ def _generate_filename(
     date: str, job_title: str | None, job_description: str | None
 ) -> str:
     if job_title:
-        sanitized_job_title = job_title.replace(" ", "_").lower()
+        sanitized_job_title = _sanitize_filename_component(job_title)
         return f"tailored_resume_{sanitized_job_title}_{date}.yaml"
     if job_description:
         first_line = job_description.split("\n")[0]
-        sanitized_first_line = first_line.replace(" ", "_").lower()
+        sanitized_first_line = _sanitize_filename_component(first_line)
         return f"tailored_resume_{sanitized_first_line}_{date}.yaml"
     return f"tailored_resume_{date}.yaml"
 
@@ -72,16 +74,18 @@ def _save_to_file(
 ) -> Path:
     tz = datetime.now().astimezone().tzinfo
     date = datetime.now(tz).strftime("%Y-%m-%d.%H-%M")
-    output_dir.mkdir(parents=True, exist_ok=True)
     if output_filename:
-        output_path = output_dir / output_filename.format(
+        job_description_text = template_context.get("job_description_text") or ""
+        first_line = job_description_text.split("\n")[0] if job_description_text else ""
+        rendered_filename = output_filename.format(
             date=date,
-            job_title=template_context.get("job_title"),
-            first_line=template_context.get("job_description_text", "").split("\n")[0]
-            if template_context.get("job_description_text")
-            else "",
-            model=template_context.get("model"),
+            job_title=_sanitize_filename_component(
+                template_context.get("job_title") or ""
+            ),
+            first_line=_sanitize_filename_component(first_line),
+            model=_sanitize_filename_component(template_context.get("model") or ""),
         )
+        output_path = output_dir / rendered_filename
     else:
         output_path = output_dir / _generate_filename(
             date,
@@ -92,6 +96,7 @@ def _save_to_file(
         raise FileExistsError(
             f"Output file {output_path} already exists and overwrite is disabled."
         )
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w") as f:
         f.write(response_text)
     return output_path.resolve()
