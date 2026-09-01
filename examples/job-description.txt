@@ -1,0 +1,38 @@
+Senior Backend Engineer - Platform Team
+
+Acme Analytics is looking for a Senior Backend Engineer to join our Platform
+team. You'll help us scale our event processing infrastructure and mentor
+engineers as we grow.
+
+Responsibilities:
+- Design, build, and operate distributed backend services in Python
+- Own our event-driven data pipeline (Kafka) that processes millions of
+  events per day, focusing on reliability and latency
+- Build and maintain REST APIs (FastAPI) consumed by internal and external
+  clients
+- Improve CI/CD pipelines and deployment automation
+- Partner with infrastructure teams on AWS (ECS, Lambda, RDS) to optimize
+  cost and reliability
+- Mentor junior and mid-level engineers, and participate in architecture
+  reviews
+
+Requirements:
+- 5+ years of professional software engineering experience
+- Strong proficiency in Python and experience with FastAPI or similar
+  frameworks
+- Experience with event-driven architectures and message queues (Kafka,
+  SQS, or similar)
+- Experience with relational databases (PostgreSQL) and caching layers
+  (Redis)
+- Hands-on experience with containerization and orchestration (Docker,
+  Kubernetes, ECS)
+- Experience with AWS or another major cloud provider
+- Familiarity with CI/CD tooling (GitHub Actions or similar)
+- Excellent communication skills and experience mentoring other engineers
+
+Nice to have:
+- Experience with observability tooling (Prometheus, Grafana, or similar)
+- Contributions to open-source projects
+- Experience with TypeScript/React for internal tooling
+
+Location: San Francisco, CA (hybrid) or Remote (US)
