@@ -9,6 +9,7 @@ from litellm import completion as _litellm_completion
 
 from resumegen._core.tailor import (
     _build_taylor_system_prompt,
+    _extract_yaml_comments,
     _generate_filename,
     _save_to_file,
     _track_cost,
@@ -45,6 +46,32 @@ class TestBuildTaylorSystemPrompt:
     def test_contains_resume_writer_context(self):
         result = _build_taylor_system_prompt()
         assert "resume" in result.lower()
+
+    def test_no_rationale_instructions_by_default(self):
+        result = _build_taylor_system_prompt()
+        assert "rationale" not in result.lower()
+
+    def test_feedback_adds_rationale_instructions(self):
+        result = _build_taylor_system_prompt(feedback=True)
+        assert "rationale" in result.lower()
+        assert "yaml comments" in result.lower()
+
+
+class TestExtractYamlComments:
+    def test_extracts_comment_lines(self):
+        text = "name: Jane\n# picked this because of X\nrole: Engineer\n"
+        assert _extract_yaml_comments(text) == "picked this because of X"
+
+    def test_extracts_multiple_comments_in_order(self):
+        text = "# first reason\nname: Jane\n# second reason\nrole: Engineer\n"
+        assert _extract_yaml_comments(text) == "first reason\nsecond reason"
+
+    def test_ignores_indented_comments_correctly(self):
+        text = "highlights:\n  - foo\n  # nested reason\n"
+        assert _extract_yaml_comments(text) == "nested reason"
+
+    def test_returns_empty_string_when_no_comments(self):
+        assert _extract_yaml_comments("name: Jane\nrole: Engineer\n") == ""
 
 
 class TestGenerateFilename:
@@ -106,6 +133,13 @@ class TestSaveToFile:
         context = {"job_title": "Engineer", "job_description_text": "Something"}
         path = _save_to_file(output_dir, None, "content", context)
         assert "engineer" in path.name
+
+    def test_raises_when_file_exists_and_no_overwrite(self, output_dir):
+        path = _save_to_file(output_dir, None, "content", {})
+        with pytest.raises(FileExistsError):
+            _save_to_file(
+                output_dir, path.name, "new content", {}, overwrite_existing=False
+            )
 
 
 class TestTailorResume:
@@ -290,6 +324,43 @@ class TestTailorResume:
                 save_to_file=False,
             )
         assert litellm.success_callback == []
+
+    def test_feedback_flag_reaches_system_prompt(
+        self, master_data_file, job_description_file, output_dir
+    ):
+        with patch("resumegen._core.tailor.completion") as mock_completion:
+            mock_resp = MagicMock()
+            mock_resp.choices[0].message.content = "tailored yaml"
+            mock_completion.return_value = mock_resp
+            tailor_resume(
+                master_data_file,
+                job_description_file,
+                output_dir,
+                "gpt-4o",
+                save_to_file=False,
+                feedback=True,
+            )
+        _, kwargs = mock_completion.call_args
+        system_message = kwargs["messages"][0]["content"]
+        assert "rationale" in system_message.lower()
+
+    def test_no_feedback_omits_rationale_instructions(
+        self, master_data_file, job_description_file, output_dir
+    ):
+        with patch("resumegen._core.tailor.completion") as mock_completion:
+            mock_resp = MagicMock()
+            mock_resp.choices[0].message.content = "tailored yaml"
+            mock_completion.return_value = mock_resp
+            tailor_resume(
+                master_data_file,
+                job_description_file,
+                output_dir,
+                "gpt-4o",
+                save_to_file=False,
+            )
+        _, kwargs = mock_completion.call_args
+        system_message = kwargs["messages"][0]["content"]
+        assert "rationale" not in system_message.lower()
 
     def test_re_raises_on_exception(
         self, master_data_file, job_description_file, output_dir

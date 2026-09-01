@@ -249,6 +249,69 @@ class TestTailorCommand:
         assert result.output.strip() == "raw yaml content"
 
     @patch("resumegen._cli.tailor.tailor_resume")
+    def test_feedback_flag_forwarded_and_rationale_printed(
+        self,
+        mock_tailor,
+        master_data_file,
+        job_description_file,
+        config_file,
+        output_dir,
+    ):
+        mock_tailor.return_value = (
+            "name: Jane\n# picked this because of X\nrole: Engineer\n",
+            output_dir / "tailored.yaml",
+        )
+        result = runner.invoke(
+            app,
+            [
+                "tailor",
+                str(master_data_file),
+                str(job_description_file),
+                "--config",
+                str(config_file),
+                "--output-dir",
+                str(output_dir),
+                "--model",
+                "gpt-4o",
+                "--feedback",
+            ],
+        )
+        assert result.exit_code == 0
+        call_args = mock_tailor.call_args.args
+        assert call_args[10] is True
+        assert "Tailoring rationale" in result.output
+        assert "picked this because of X" in result.output
+
+    @patch("resumegen._cli.tailor.tailor_resume")
+    def test_no_feedback_flag_omits_rationale_output(
+        self,
+        mock_tailor,
+        master_data_file,
+        job_description_file,
+        config_file,
+        output_dir,
+    ):
+        mock_tailor.return_value = ("raw yaml content", output_dir / "tailored.yaml")
+        result = runner.invoke(
+            app,
+            [
+                "tailor",
+                str(master_data_file),
+                str(job_description_file),
+                "--config",
+                str(config_file),
+                "--output-dir",
+                str(output_dir),
+                "--model",
+                "gpt-4o",
+            ],
+        )
+        assert result.exit_code == 0
+        call_args = mock_tailor.call_args.args
+        assert call_args[10] is False
+        assert "Tailoring rationale" not in result.output
+
+    @patch("resumegen._cli.tailor.tailor_resume")
     def test_base_url_forwarded(
         self,
         mock_tailor,
