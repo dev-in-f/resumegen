@@ -7,7 +7,9 @@ import pytest
 from conftest import MINIMAL_DATA_YAML, MINIMAL_JOB_DESCRIPTION
 from litellm import completion as _litellm_completion
 
+from resumegen._core.logging import color_message
 from resumegen._core.tailor import (
+    ScoreReport,
     _build_taylor_system_prompt,
     _extract_yaml_comments,
     _generate_filename,
@@ -379,3 +381,42 @@ class TestTailorResume:
                 "gpt-4o",
                 save_to_file=False,
             )
+
+
+class TestScoreReport:
+    def test_str_representation_with_score_and_strengths(self):
+        report = ScoreReport(score=85, strengths=["Good communication", "Team player"])
+        expected_output = (
+            "Score: " + color_message("85", "green") + "\n"
+            "\x1b[1;37mStrengths:\x1b[0m\n"
+            "- Good communication\n"
+            "- Team player"
+        )
+        assert report.get_report_string() == expected_output
+
+    def test_str_representation_with_no_score(self):
+        report = ScoreReport(score=None, strengths=["Good communication"])
+        expected_output = "No score available."
+        assert report.get_report_string() == expected_output
+
+    def test_str_representation_with_mid_score(self):
+        report = ScoreReport(score=65, strengths=["Good communication"])
+        expected_output = (
+            "Score: " + color_message("65", "yellow") + "\n"
+            "\x1b[1;37mStrengths:\x1b[0m\n"
+            "- Good communication"
+        )
+        assert report.get_report_string() == expected_output
+
+    def test_str_representation_with_gaps(self):
+        report = ScoreReport(
+            score=70, strengths=["Good communication"], gaps=["Needs more experience"]
+        )
+        expected_output = (
+            "Score: " + color_message("70", "yellow") + "\n"
+            "\x1b[1;37mStrengths:\x1b[0m\n"
+            "- Good communication\n"
+            "\x1b[1;37mGaps:\x1b[0m\n"
+            "- Needs more experience"
+        )
+        assert report.get_report_string() == expected_output

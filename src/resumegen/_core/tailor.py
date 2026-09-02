@@ -5,10 +5,44 @@ from pathlib import Path
 
 import litellm
 from litellm import completion
+from pydantic import BaseModel
 
 from resumegen._core.formatting import _sanitize_filename_component
+from resumegen._core.logging import color_message
 
 logger = logging.getLogger(__name__)
+
+
+class ScoreReport(BaseModel):
+    score: int | None
+    strengths: list[str] = []
+    gaps: list[str] = []
+    raw_response: str = ""
+
+    def get_report_string(self) -> str:
+        report_lines = []
+        if self.score is None:
+            logger.debug("Raw response for score report: %s", self.raw_response)
+            return "No score available."
+        match self.score:
+            case score if score < 50:
+                report_lines.append("Score: " + color_message(str(self.score), "red"))
+            case score if 50 <= score < 80:
+                report_lines.append(
+                    "Score: " + color_message(str(self.score), "yellow")
+                )
+            case score if score >= 80:
+                report_lines.append("Score: " + color_message(str(self.score), "green"))
+
+        if self.strengths:
+            report_lines.append("\x1b[1;37mStrengths:\x1b[0m")
+            for strength in self.strengths:
+                report_lines.extend([f"- {strength}"])
+        if self.gaps:
+            report_lines.append("\x1b[1;37mGaps:\x1b[0m")
+            for gap in self.gaps:
+                report_lines.extend([f"- {gap}"])
+        return "\n".join(report_lines)
 
 
 def _track_cost(kwargs, completion_response, start_time, end_time):
