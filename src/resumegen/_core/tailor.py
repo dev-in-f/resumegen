@@ -6,7 +6,7 @@ from pathlib import Path
 import litellm
 from jinja2 import Environment, FileSystemLoader
 from litellm import completion
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from resumegen._core.formatting import _sanitize_filename_component
 from resumegen._core.logging import color_message
@@ -22,18 +22,15 @@ class ScoreReport(BaseModel):
 
     def get_report_string(self) -> str:
         report_lines = []
-        if self.score is None:
+        if self.score is None or not isinstance(self.score, int):
             logger.debug("Raw response for score report: %s", self.raw_response)
             return "No score available."
-        match self.score:
-            case score if score < 50:
-                report_lines.append("Score: " + color_message(str(self.score), "red"))
-            case score if 50 <= score < 80:
-                report_lines.append(
-                    "Score: " + color_message(str(self.score), "yellow")
-                )
-            case score if score >= 80:
-                report_lines.append("Score: " + color_message(str(self.score), "green"))
+        if self.score < 50:
+            report_lines.append("Score: " + color_message(str(self.score), "red"))
+        if 50 <= self.score < 80:
+            report_lines.append("Score: " + color_message(str(self.score), "yellow"))
+        if self.score >= 80:
+            report_lines.append("Score: " + color_message(str(self.score), "green"))
 
         if self.strengths:
             report_lines.append("\x1b[1;37mStrengths:\x1b[0m")
@@ -44,6 +41,13 @@ class ScoreReport(BaseModel):
             for gap in self.gaps:
                 report_lines.extend([f"- {gap}"])
         return "\n".join(report_lines)
+
+    @field_validator("score")
+    @classmethod
+    def check_score(cls, v):
+        if v is not None and (v < 0 or v > 100):
+            raise ValueError("Score must be between 0 and 100.")
+        return v
 
 
 def _track_cost(kwargs, completion_response, start_time, end_time):
@@ -141,7 +145,7 @@ def tailor_resume(
     overwrite_existing: bool = False,
     feedback: bool = False,
 ) -> tuple[str, Path | None]:
-    if model == "":
+    if model.strip(" ") == "":
         raise ValueError(
             "Model parameter is not set. "
             "Please set it to the model you want to use for tailoring resumes."
@@ -195,5 +199,45 @@ def tailor_resume(
     return response_text, None
 
 
-def score_master_data():
-    pass  # pragma: no cover
+def score_master_data(
+    master_data_path: Path | str,
+    job_description: Path | str,
+    model: str,
+    base_url: str | None = None,
+    track_cost: bool = False,
+) -> str:
+    if model.strip(" ") == "":
+        raise ValueError(
+            "Model parameter is not set. "
+            "Please set it to the model you want to use for scoring resumes."
+        )
+    with Path(master_data_path).open() as f:
+        resume_data = f.read()
+
+    if isinstance(job_description, Path):
+        with job_description.open() as f:
+            job_description_text = f.read()
+    else:
+        job_description_text = job_description
+
+    litellm.success_callback = [_track_cost] if track_cost else []
+    response = completion(
+        model=model,
+        max_tokens=4000,
+        messages=[
+            {
+                "role": "system",
+                "content": _build_system_prompt("score.txt.j2"),
+            },
+            {
+                "role": "user",
+                "content": f"Master Resume Data:\n{resume_data}\n\n"
+                f"Job Description:\n{job_description_text}",
+            },
+        ],
+        base_url=base_url,
+    )
+    response_text = response.choices[0].message.content  # type: ignore
+    if not response_text:
+        raise ValueError("Received empty response.")
+    return response_text

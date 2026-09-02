@@ -6,6 +6,7 @@ import litellm
 import pytest
 from conftest import MINIMAL_DATA_YAML, MINIMAL_JOB_DESCRIPTION
 from litellm import completion as _litellm_completion
+from pydantic import ValidationError
 
 from resumegen._core.logging import color_message
 from resumegen._core.tailor import (
@@ -15,6 +16,7 @@ from resumegen._core.tailor import (
     _generate_filename,
     _save_to_file,
     _track_cost,
+    score_master_data,
     tailor_resume,
 )
 
@@ -384,22 +386,25 @@ class TestTailorResume:
 
 
 class TestScoreReport:
-    def test_str_representation_with_score_and_strengths(self):
-        report = ScoreReport(score=85, strengths=["Good communication", "Team player"])
+    @pytest.mark.parametrize("score", [85, 80])
+    def test_get_report_string_with_score_and_strengths(self, score):
+        report = ScoreReport(
+            score=score, strengths=["Good communication", "Team player"]
+        )
         expected_output = (
-            "Score: " + color_message("85", "green") + "\n"
+            "Score: " + color_message(score, "green") + "\n"
             "\x1b[1;37mStrengths:\x1b[0m\n"
             "- Good communication\n"
             "- Team player"
         )
         assert report.get_report_string() == expected_output
 
-    def test_str_representation_with_no_score(self):
+    def test_get_report_string_with_no_score(self):
         report = ScoreReport(score=None, strengths=["Good communication"])
         expected_output = "No score available."
         assert report.get_report_string() == expected_output
 
-    def test_str_representation_with_mid_score(self):
+    def test_get_report_string_with_mid_score(self):
         report = ScoreReport(score=65, strengths=["Good communication"])
         expected_output = (
             "Score: " + color_message("65", "yellow") + "\n"
@@ -408,7 +413,7 @@ class TestScoreReport:
         )
         assert report.get_report_string() == expected_output
 
-    def test_str_representation_with_gaps(self):
+    def test_get_report_string_with_gaps(self):
         report = ScoreReport(
             score=70, strengths=["Good communication"], gaps=["Needs more experience"]
         )
@@ -420,3 +425,82 @@ class TestScoreReport:
             "- Needs more experience"
         )
         assert report.get_report_string() == expected_output
+
+    def test_get_report_string_with_low_score(self):
+        report = ScoreReport(
+            score=45, strengths=["Good communication"], gaps=["Needs more experience"]
+        )
+        expected_output = (
+            "Score: " + color_message("45", "red") + "\n"
+            "\x1b[1;37mStrengths:\x1b[0m\n"
+            "- Good communication\n"
+            "\x1b[1;37mGaps:\x1b[0m\n"
+            "- Needs more experience"
+        )
+        assert report.get_report_string() == expected_output
+
+    def test_get_report_string_with_no_strengths_or_gaps(self):
+        report = ScoreReport(score=90)
+        expected_output = "Score: " + color_message("90", "green")
+        assert report.get_report_string() == expected_output
+
+    def test_invalid_score_raises_validation_error(self):
+        with pytest.raises(ValidationError):
+            ScoreReport(score=150, strengths=["Good communication"])
+
+
+class TestScoreMasterData:
+    def test_score_master_data_returns_str(
+        self, master_data_file, job_description_file
+    ):
+        with patch(
+            "resumegen._core.tailor.completion",
+            side_effect=_mock_completion(
+                "Score: 75\nStrengths:\n  - Good communication\nGaps:\n"
+                "  - Needs more experience"
+            ),
+        ):
+            report_str = score_master_data(
+                master_data_file, job_description_file, "gpt-4o"
+            )
+        assert "Score: " in report_str
+        assert "Strengths:" in report_str
+        assert "Gaps:" in report_str
+
+    def test_score_master_data_raises_on_no_model(
+        self, master_data_file, job_description_file
+    ):
+        with pytest.raises(ValueError, match="Model parameter is not set"):
+            score_master_data(
+                master_data_file,
+                job_description_file,
+                "",
+            )
+
+    def test_score_master_data_raises_on_empty_response(
+        self, master_data_file, job_description_file
+    ):
+        mock_resp = MagicMock()
+        mock_resp.choices[0].message.content = None
+        with (
+            patch("resumegen._core.tailor.completion", return_value=mock_resp),
+            pytest.raises(ValueError, match="empty response"),
+        ):
+            score_master_data(master_data_file, job_description_file, "gpt-4o")
+
+    def test_score_master_data_accepts_job_description_as_string(
+        self, master_data_file
+    ):
+        with patch(
+            "resumegen._core.tailor.completion",
+            side_effect=_mock_completion(
+                "Score: 85\nStrengths:\n  "
+                "- Good communication\nGaps:\n  - Needs more experience"
+            ),
+        ):
+            report_str = score_master_data(
+                master_data_file, "Backend Dev\nMore details", "gpt-4o"
+            )
+        assert "Score: " in report_str
+        assert "Strengths:" in report_str
+        assert "Gaps:" in report_str
