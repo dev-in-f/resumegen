@@ -20,26 +20,31 @@ class ScoreReport(BaseModel):
     gaps: list[str] = []
     raw_response: str = ""
 
-    def get_report_string(self) -> str:
-        report_lines = []
+    def get_report_string(self, pretty: bool = True) -> str:
         if self.score is None or not isinstance(self.score, int):
             logger.debug("Raw response for score report: %s", self.raw_response)
             return "No score available."
+
         if self.score < 50:
-            report_lines.append("Score: " + color_message(str(self.score), "red"))
-        if 50 <= self.score < 80:
-            report_lines.append("Score: " + color_message(str(self.score), "yellow"))
-        if self.score >= 80:
-            report_lines.append("Score: " + color_message(str(self.score), "green"))
+            color = "red"
+        elif self.score < 80:
+            color = "yellow"
+        else:
+            color = "green"
+        score_text = (
+            color_message(str(self.score), color) if pretty else str(self.score)
+        )
+        report_lines = [f"Score: {score_text}"]
+
+        def section_header(title: str) -> str:
+            return f"\x1b[1;37m{title}:\x1b[0m" if pretty else f"{title}:"
 
         if self.strengths:
-            report_lines.append("\x1b[1;37mStrengths:\x1b[0m")
-            for strength in self.strengths:
-                report_lines.extend([f"- {strength}"])
+            report_lines.append(section_header("Strengths"))
+            report_lines.extend(f"- {strength}" for strength in self.strengths)
         if self.gaps:
-            report_lines.append("\x1b[1;37mGaps:\x1b[0m")
-            for gap in self.gaps:
-                report_lines.extend([f"- {gap}"])
+            report_lines.append(section_header("Gaps"))
+            report_lines.extend(f"- {gap}" for gap in self.gaps)
         return "\n".join(report_lines)
 
     @field_validator("score")
