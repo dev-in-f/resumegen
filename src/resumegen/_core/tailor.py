@@ -133,8 +133,8 @@ def _save_to_file(
 
 
 def tailor_resume(
-    master_data_path: Path,
-    job_description: Path | str,
+    master_data: str,
+    job_description: str,
     output_dir: Path,
     model: str,
     base_url: str | None = None,
@@ -152,14 +152,6 @@ def tailor_resume(
         )
     with resources.path("resumegen", "schemas/resume-data.json") as schema_path:
         schema = schema_path.read_text()
-    with master_data_path.open() as f:
-        resume_data = f.read()
-
-    if isinstance(job_description, Path):
-        with job_description.open() as f:
-            job_description_text = f.read()
-    else:
-        job_description_text = job_description
 
     litellm.success_callback = [_track_cost] if track_cost else []
     response = completion(
@@ -172,8 +164,8 @@ def tailor_resume(
             },
             {
                 "role": "user",
-                "content": f"Master Resume Data:\n{resume_data}\n\n"
-                f"Job Description:\n{job_description_text}"
+                "content": f"Master Resume Data:\n{master_data}\n\n"
+                f"Job Description:\n{job_description}"
                 f"\n\nOutput Resume Data Schema:\n{schema}",
             },
         ],
@@ -185,7 +177,7 @@ def tailor_resume(
     if save_to_file:
         template_context = {
             "job_title": job_title,
-            "job_description_text": job_description_text,
+            "job_description_text": job_description,
             "model": model,
         }
         output_path = _save_to_file(
@@ -200,8 +192,8 @@ def tailor_resume(
 
 
 def score_master_data(
-    master_data_path: Path | str,
-    job_description: Path | str,
+    master_data: str,
+    job_description: str,
     model: str,
     base_url: str | None = None,
     track_cost: bool = False,
@@ -211,14 +203,6 @@ def score_master_data(
             "Model parameter is not set. "
             "Please set it to the model you want to use for scoring resumes."
         )
-    with Path(master_data_path).open() as f:
-        resume_data = f.read()
-
-    if isinstance(job_description, Path):
-        with job_description.open() as f:
-            job_description_text = f.read()
-    else:
-        job_description_text = job_description
 
     litellm.success_callback = [_track_cost] if track_cost else []
     response = completion(
@@ -231,8 +215,8 @@ def score_master_data(
             },
             {
                 "role": "user",
-                "content": f"Master Resume Data:\n{resume_data}\n\n"
-                f"Job Description:\n{job_description_text}",
+                "content": f"Master Resume Data:\n{master_data}\n\n"
+                f"Job Description:\n{job_description}",
             },
         ],
         base_url=base_url,

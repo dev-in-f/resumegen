@@ -103,13 +103,18 @@ def tailor(
         logger.debug("Configuration loaded.")
         tailor_model = model or app_config.model or os.getenv("RESUMEGEN_MODEL", "")
         working_output_dir = output_dir or app_config.output_dir
+
+        with job_description_file.open() as f:
+            job_description_content = f.read()
+        with master_data_file.open() as f:
+            master_data_content = f.read()
         with Spinner(
             f"🤖  Requesting tailored resume from '{tailor_model}'...",
             enabled=interactive,
         ):
             response_text, output_path = tailor_resume(
-                master_data_file,
-                job_description_file,
+                master_data_content,
+                job_description_content,
                 working_output_dir,
                 tailor_model,
                 base_url or app_config.base_url,
