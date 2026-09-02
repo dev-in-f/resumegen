@@ -4,6 +4,7 @@ from importlib import resources
 from pathlib import Path
 
 import litellm
+from jinja2 import Environment, FileSystemLoader
 from litellm import completion
 from pydantic import BaseModel
 
@@ -54,46 +55,18 @@ def _track_cost(kwargs, completion_response, start_time, end_time):
 
 
 def _build_tailor_system_prompt(feedback: bool = False) -> str:
-    with resources.path(
-        "resumegen", "schemas/master-data.json"
-    ) as master_resume_schema:
-        rationale_instructions = (
-            """
-
-    Rationale has been explicitly requested, so also include YAML comments
-    (lines starting with #) placed near the relevant sections, explaining
-    why you selected or reworded specific highlights, skills, or projects
-    relative to the job description. Keep each comment concise and specific."""
-            if feedback
-            else ""
+    with (
+        resources.path(
+            "resumegen", "schemas/master-data.json"
+        ) as master_resume_schema_path,
+        resources.path("resumegen", "prompts") as prompts_dir,
+    ):
+        master_resume_schema = master_resume_schema_path.read_text()
+        env = Environment(loader=FileSystemLoader(prompts_dir), autoescape=True)
+        template = env.get_template("tailor.txt.j2")
+        return template.render(
+            master_resume_schema=master_resume_schema, feedback=feedback
         )
-        return f"""
-    You are an expert resume writer. You will be given:
-    1. A master data file containing all of a candidate's experience, skills,
-    education, and projects
-      - The master data file is in YAML and conforms to the following schema:
-        ```json
-        {master_resume_schema}
-
-        ```
-    2. A job description for a specific role the candidate is applying to
-
-    Your task is to produce a tailored resume YAML config that:
-    - Selects the most relevant experience highlights (max 4 per role)
-    - Selects the most relevant skills and projects
-    - Include a tailored statement that is specific to the job description
-    - Rewords highlights to mirror the language and keywords in the job description
-    - Keeps all rewording truthful - do not fabricate or exaggerate any information
-    - Ensure all fields are filled where possible according to the schema,
-      and do not remove any required fields
-    - Preserves all personal and contact information exactly as given
-    - Outputs ONLY valid YAML matching the resume config schema, no preamble,
-      and explanations can ONLY be included as YAML comments AND ONLY
-      if they are asked for
-
-    The output must be valid YAML that conforms to the included resume JSON schema.
-    Do not wrap the YAML with a code block or fencing. Do not include backticks.
-    Just return the raw YAML text.{rationale_instructions}"""
 
 
 def _extract_yaml_comments(text: str) -> str:
