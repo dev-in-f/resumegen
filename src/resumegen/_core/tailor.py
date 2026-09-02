@@ -53,7 +53,7 @@ def _track_cost(kwargs, completion_response, start_time, end_time):
         logger.info("Cost information not available in the response.")
 
 
-def _build_taylor_system_prompt(feedback: bool = False) -> str:
+def _build_tailor_system_prompt(feedback: bool = False) -> str:
     with resources.path(
         "resumegen", "schemas/master-data.json"
     ) as master_resume_schema:
@@ -189,7 +189,7 @@ def tailor_resume(
         model=model,
         max_tokens=4000,
         messages=[
-            {"role": "system", "content": _build_taylor_system_prompt(feedback)},
+            {"role": "system", "content": _build_tailor_system_prompt(feedback)},
             {
                 "role": "user",
                 "content": f"Master Resume Data:\n{resume_data}\n\n"
