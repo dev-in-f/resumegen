@@ -108,6 +108,7 @@ def _split_output_path(
 def interactive_options(f) -> click.Command:
     f = click.option(
         "--save/--no-save",
+        "-s",
         "save_to_file",
         is_flag=True,
         default=True,
