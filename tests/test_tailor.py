@@ -10,7 +10,7 @@ from litellm import completion as _litellm_completion
 from resumegen._core.logging import color_message
 from resumegen._core.tailor import (
     ScoreReport,
-    _build_tailor_system_prompt,
+    _build_system_prompt,
     _extract_yaml_comments,
     _generate_filename,
     _save_to_file,
@@ -39,22 +39,22 @@ class TestTrackCost:
         assert "not available" in caplog.text
 
 
-class TestBuildTailorSystemPrompt:
+class TestBuildSystemPrompt:
     def test_returns_non_empty_string(self):
-        result = _build_tailor_system_prompt()
+        result = _build_system_prompt("tailor.txt.j2")
         assert isinstance(result, str)
         assert len(result) > 0
 
     def test_contains_resume_writer_context(self):
-        result = _build_tailor_system_prompt()
+        result = _build_system_prompt("tailor.txt.j2")
         assert "resume" in result.lower()
 
     def test_no_rationale_instructions_by_default(self):
-        result = _build_tailor_system_prompt()
+        result = _build_system_prompt("tailor.txt.j2")
         assert "rationale" not in result.lower()
 
     def test_feedback_adds_rationale_instructions(self):
-        result = _build_tailor_system_prompt(feedback=True)
+        result = _build_system_prompt("tailor.txt.j2", feedback=True)
         assert "rationale" in result.lower()
         assert "yaml comments" in result.lower()
 

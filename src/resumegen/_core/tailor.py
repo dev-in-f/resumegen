@@ -54,7 +54,7 @@ def _track_cost(kwargs, completion_response, start_time, end_time):
         logger.info("Cost information not available in the response.")
 
 
-def _build_tailor_system_prompt(feedback: bool = False) -> str:
+def _build_system_prompt(template_name: str, feedback: bool = False) -> str:
     with (
         resources.path(
             "resumegen", "schemas/master-data.json"
@@ -63,7 +63,7 @@ def _build_tailor_system_prompt(feedback: bool = False) -> str:
     ):
         master_resume_schema = master_resume_schema_path.read_text()
         env = Environment(loader=FileSystemLoader(prompts_dir), autoescape=True)
-        template = env.get_template("tailor.txt.j2")
+        template = env.get_template(template_name)
         return template.render(
             master_resume_schema=master_resume_schema, feedback=feedback
         )
@@ -162,7 +162,10 @@ def tailor_resume(
         model=model,
         max_tokens=4000,
         messages=[
-            {"role": "system", "content": _build_tailor_system_prompt(feedback)},
+            {
+                "role": "system",
+                "content": _build_system_prompt("tailor.txt.j2", feedback),
+            },
             {
                 "role": "user",
                 "content": f"Master Resume Data:\n{resume_data}\n\n"
