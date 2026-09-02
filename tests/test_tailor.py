@@ -161,8 +161,8 @@ class TestTailorResume:
             side_effect=_mock_completion(MINIMAL_DATA_YAML),
         ):
             content, output_path = tailor_resume(
-                master_data_file,
-                job_description_file,
+                MINIMAL_DATA_YAML,
+                MINIMAL_JOB_DESCRIPTION,
                 output_dir,
                 "gpt-4o",
                 save_to_file=True,
@@ -240,16 +240,14 @@ class TestTailorResume:
         assert output_path is None
         assert content == "tailored yaml"
 
-    def test_output_filename_overrides_default(
-        self, master_data_file, job_description_file, output_dir
-    ):
+    def test_output_filename_overrides_default(self, output_dir):
         with patch(
             "resumegen._core.tailor.completion",
             side_effect=_mock_completion("tailored yaml"),
         ):
             _, output_path = tailor_resume(
-                master_data_file,
-                job_description_file,
+                MINIMAL_DATA_YAML,
+                MINIMAL_JOB_DESCRIPTION,
                 output_dir,
                 "gpt-4o",
                 save_to_file=True,
@@ -392,7 +390,7 @@ class TestScoreReport:
             score=score, strengths=["Good communication", "Team player"]
         )
         expected_output = (
-            "Score: " + color_message(score, "green") + "\n"
+            "\x1b[1;37mScore:\x1b[0m " + color_message(score, "green") + "\n"
             "\x1b[1;37mStrengths:\x1b[0m\n"
             "- Good communication\n"
             "- Team player"
@@ -407,7 +405,7 @@ class TestScoreReport:
     def test_get_report_string_with_mid_score(self):
         report = ScoreReport(score=65, strengths=["Good communication"])
         expected_output = (
-            "Score: " + color_message("65", "yellow") + "\n"
+            "\x1b[1;37mScore:\x1b[0m " + color_message("65", "yellow") + "\n"
             "\x1b[1;37mStrengths:\x1b[0m\n"
             "- Good communication"
         )
@@ -418,7 +416,7 @@ class TestScoreReport:
             score=70, strengths=["Good communication"], gaps=["Needs more experience"]
         )
         expected_output = (
-            "Score: " + color_message("70", "yellow") + "\n"
+            "\x1b[1;37mScore:\x1b[0m " + color_message("70", "yellow") + "\n"
             "\x1b[1;37mStrengths:\x1b[0m\n"
             "- Good communication\n"
             "\x1b[1;37mGaps:\x1b[0m\n"
@@ -431,7 +429,7 @@ class TestScoreReport:
             score=45, strengths=["Good communication"], gaps=["Needs more experience"]
         )
         expected_output = (
-            "Score: " + color_message("45", "red") + "\n"
+            "\x1b[1;37mScore:\x1b[0m " + color_message("45", "red") + "\n"
             "\x1b[1;37mStrengths:\x1b[0m\n"
             "- Good communication\n"
             "\x1b[1;37mGaps:\x1b[0m\n"
@@ -441,7 +439,7 @@ class TestScoreReport:
 
     def test_get_report_string_with_no_strengths_or_gaps(self):
         report = ScoreReport(score=90)
-        expected_output = "Score: " + color_message("90", "green")
+        expected_output = "\x1b[1;37mScore:\x1b[0m " + color_message("90", "green")
         assert report.get_report_string() == expected_output
 
     def test_invalid_score_raises_validation_error(self):

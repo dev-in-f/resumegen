@@ -34,7 +34,7 @@ class ScoreReport(BaseModel):
         score_text = (
             color_message(str(self.score), color) if pretty else str(self.score)
         )
-        report_lines = [f"Score: {score_text}"]
+        report_lines = [f"\x1b[1;37mScore:\x1b[0m {score_text}"]
 
         def section_header(title: str) -> str:
             return f"\x1b[1;37m{title}:\x1b[0m" if pretty else f"{title}:"
