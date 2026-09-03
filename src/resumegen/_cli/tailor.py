@@ -11,6 +11,7 @@ from resumegen._cli.shared import (
     _load_yaml_to_data_model,
     _override_logging_options,
     interactive_options,
+    llm_arguments,
     llm_options,
     logging_options,
     render_options,
@@ -32,14 +33,7 @@ logger = logging.getLogger("resumegen.cli")
 @logging_options
 @interactive_options
 @llm_options
-@click.argument(
-    "master_data_file",
-    type=click.Path(path_type=Path, dir_okay=False, exists=True),
-)
-@click.argument(
-    "job_description_file",
-    type=click.Path(path_type=Path, dir_okay=False, exists=True),
-)
+@llm_arguments
 @click.option(
     "--job-title",
     type=str,

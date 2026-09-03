@@ -86,6 +86,16 @@ def llm_options(f) -> click.Command:
     )(f)
 
 
+def llm_arguments(f) -> click.Command:
+    f = click.argument(
+        "master_data_file", type=click.Path(path_type=Path, dir_okay=False, exists=True)
+    )(f)
+    return click.argument(
+        "job_description_file",
+        type=click.Path(path_type=Path, dir_okay=False, exists=True),
+    )(f)
+
+
 def _override_logging_options(
     log_level: str | None, log_file: Path | None, verbose: bool = False
 ) -> None:
