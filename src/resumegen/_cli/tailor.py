@@ -4,7 +4,6 @@ from pathlib import Path
 
 import click
 import litellm
-import yaml
 from pydantic import ValidationError
 
 from resumegen._cli.shared import (
@@ -19,9 +18,7 @@ from resumegen._cli.shared import (
 from resumegen._core.config import Config
 from resumegen._core.logging import Spinner, color_message
 from resumegen._core.tailor import (
-    ScoreReport,
     _extract_yaml_comments,
-    score_master_data,
     tailor_resume,
 )
 
@@ -58,13 +55,6 @@ logger = logging.getLogger("resumegen.cli")
     help="Ask the model to explain its tailoring rationale (as YAML comments "
     "in the output) and print that rationale to the console.",
 )
-@click.option(
-    "--score",
-    is_flag=True,
-    default=False,
-    help="Ask the model to provide a score (0-100) for the tailored resume "
-    "and print that score to the console. You can skip tailoring after scoring.",
-)
 def tailor(
     master_data_file: Path,
     job_description_file: Path,
@@ -82,7 +72,6 @@ def tailor(
     save_to_file: bool = True,
     output_filename_template: str | None = None,
     feedback: bool = False,
-    score: bool = False,
 ):
     """Tailor resume data based on a job description using a LLM."""
     _override_logging_options(log_level, log_file, verbose)
@@ -97,25 +86,6 @@ def tailor(
         with master_data_file.open() as f:
             master_data_content = f.read()
 
-        if score:
-            with Spinner(
-                f"📊 Scoring resume with '{tailor_model}'...", enabled=interactive
-            ):
-                raw_report = score_master_data(
-                    master_data_content,
-                    job_description_content,
-                    tailor_model,
-                    base_url or app_config.base_url,
-                )
-
-            report = yaml.safe_load(raw_report)
-            report = ScoreReport.model_validate(report)
-            click.echo(report.get_report_string())
-            if interactive and not click.confirm(
-                "Proceed with tailoring?", default=True
-            ):
-                click.echo("Tailoring aborted by user.")
-                return
         with Spinner(
             f"🤖  Requesting tailored resume from '{tailor_model}'...",
             enabled=interactive,
