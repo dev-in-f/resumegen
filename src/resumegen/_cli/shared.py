@@ -61,6 +61,31 @@ def logging_options(f) -> click.Command:
     )(f)
 
 
+def llm_options(f) -> click.Command:
+    f = click.option(
+        "--model",
+        type=str,
+        help="Language model to use for tailoring the resume. "
+        "Required to be set via an environment variable, "
+        "in the config file, or as a command-line option.",
+        envvar="RESUMEGEN_MODEL",
+    )(f)
+    f = click.option(
+        "--base-url",
+        type=str,
+        help="Base URL for the language model API. "
+        "Required for generic models. "
+        "Check the litellm documentation for details on how to set this up.",
+        envvar="RESUMEGEN_BASE_URL",
+    )(f)
+    return click.option(
+        "--track-cost",
+        is_flag=True,
+        default=False,
+        help="Track the cost of API calls to the language model. ",
+    )(f)
+
+
 def _override_logging_options(
     log_level: str | None, log_file: Path | None, verbose: bool = False
 ) -> None:

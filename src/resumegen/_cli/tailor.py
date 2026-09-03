@@ -11,6 +11,7 @@ from resumegen._cli.shared import (
     _load_yaml_to_data_model,
     _override_logging_options,
     interactive_options,
+    llm_options,
     logging_options,
     render_options,
 )
@@ -30,6 +31,7 @@ logger = logging.getLogger("resumegen.cli")
 @render_options
 @logging_options
 @interactive_options
+@llm_options
 @click.argument(
     "master_data_file",
     type=click.Path(path_type=Path, dir_okay=False, exists=True),
@@ -37,28 +39,6 @@ logger = logging.getLogger("resumegen.cli")
 @click.argument(
     "job_description_file",
     type=click.Path(path_type=Path, dir_okay=False, exists=True),
-)
-@click.option(
-    "--model",
-    type=str,
-    help="Language model to use for tailoring the resume. "
-    "Required to be set via an environment variable, "
-    "in the config file, or as a command-line option.",
-    envvar="RESUMEGEN_MODEL",
-)
-@click.option(
-    "--base-url",
-    type=str,
-    help="Base URL for the language model API. "
-    "Required for generic models. "
-    "Check the litellm documentation for details on how to set this up.",
-    envvar="RESUMEGEN_BASE_URL",
-)
-@click.option(
-    "--track-cost",
-    is_flag=True,
-    default=False,
-    help="Track the cost of API calls to the language model. ",
 )
 @click.option(
     "--job-title",
