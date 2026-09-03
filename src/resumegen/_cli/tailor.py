@@ -77,7 +77,7 @@ def tailor(
     _override_logging_options(log_level, log_file, verbose)
     try:
         app_config = _load_yaml_to_data_model(config_path, Config)
-        logger.debug("Configuration loaded.")
+        logger.debug("Loaded configuration: %s", app_config)
         tailor_model = model or app_config.model or os.getenv("RESUMEGEN_MODEL", "")
         working_output_dir = output_dir or app_config.output_dir
 

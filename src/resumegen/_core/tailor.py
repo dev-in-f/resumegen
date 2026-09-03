@@ -4,78 +4,12 @@ from importlib import resources
 from pathlib import Path
 
 import litellm
-from jinja2 import Environment, FileSystemLoader
 from litellm import completion
-from pydantic import BaseModel, field_validator
 
 from resumegen._core.formatting import _sanitize_filename_component
-from resumegen._core.logging import color_message
+from resumegen._core.llm_utils import _build_system_prompt, _track_cost
 
 logger = logging.getLogger(__name__)
-
-
-class ScoreReport(BaseModel):
-    score: int | None
-    strengths: list[str] = []
-    gaps: list[str] = []
-    raw_response: str = ""
-
-    def get_report_string(self, pretty: bool = True) -> str:
-        if self.score is None or not isinstance(self.score, int):
-            logger.debug("Raw response for score report: %s", self.raw_response)
-            return "No score available."
-
-        if self.score < 50:
-            color = "red"
-        elif self.score < 80:
-            color = "yellow"
-        else:
-            color = "green"
-        score_text = (
-            color_message(str(self.score), color) if pretty else str(self.score)
-        )
-        report_lines = [f"\x1b[1;37mScore:\x1b[0m {score_text}"]
-
-        def section_header(title: str) -> str:
-            return f"\x1b[1;37m{title}:\x1b[0m" if pretty else f"{title}:"
-
-        if self.strengths:
-            report_lines.append(section_header("Strengths"))
-            report_lines.extend(f"- {strength}" for strength in self.strengths)
-        if self.gaps:
-            report_lines.append(section_header("Gaps"))
-            report_lines.extend(f"- {gap}" for gap in self.gaps)
-        return "\n".join(report_lines)
-
-    @field_validator("score")
-    @classmethod
-    def check_score(cls, v):
-        if v is not None and (v < 0 or v > 100):
-            raise ValueError("Score must be between 0 and 100.")
-        return v
-
-
-def _track_cost(kwargs, completion_response, start_time, end_time):
-    cost = kwargs.get("response_cost")
-    if cost:
-        logger.info("Cost of the request: $%f", cost)
-    else:
-        logger.info("Cost information not available in the response.")
-
-
-def _build_system_prompt(template_name: str, feedback: bool = False) -> str:
-    with (
-        resources.path(
-            "resumegen", "schemas/master-data.json"
-        ) as master_resume_schema_path,
-        resources.path("resumegen", "prompts") as prompts_dir,
-    ):
-        master_resume_schema = master_resume_schema_path.read_text()
-        env = Environment(loader=FileSystemLoader(prompts_dir), autoescape=True)
-        template = env.get_template(template_name)
-        return template.render(
-            master_resume_schema=master_resume_schema, feedback=feedback
-        )
 
 
 def _extract_yaml_comments(text: str) -> str:
@@ -194,39 +128,3 @@ def tailor_resume(
         )
         return response_text, output_path
     return response_text, None
-
-
-def score_master_data(
-    master_data: str,
-    job_description: str,
-    model: str,
-    base_url: str | None = None,
-    track_cost: bool = False,
-) -> str:
-    if model.strip(" ") == "":
-        raise ValueError(
-            "Model parameter is not set. "
-            "Please set it to the model you want to use for scoring resumes."
-        )
-
-    litellm.success_callback = [_track_cost] if track_cost else []
-    response = completion(
-        model=model,
-        max_tokens=4000,
-        messages=[
-            {
-                "role": "system",
-                "content": _build_system_prompt("score.txt.j2"),
-            },
-            {
-                "role": "user",
-                "content": f"Master Resume Data:\n{master_data}\n\n"
-                f"Job Description:\n{job_description}",
-            },
-        ],
-        base_url=base_url,
-    )
-    response_text = response.choices[0].message.content  # type: ignore
-    if not response_text:
-        raise ValueError("Received empty response.")
-    return response_text
