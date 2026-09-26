@@ -83,6 +83,7 @@ def tailor_resume(
     output_filename: str | None = None,
     overwrite_existing: bool = False,
     feedback: bool = False,
+    max_tokens: int = 4000,
 ) -> tuple[str, Path | None]:
     if model.strip(" ") == "":
         raise ValueError(
@@ -95,7 +96,7 @@ def tailor_resume(
     litellm.success_callback = [_track_cost] if track_cost else []
     response = completion(
         model=model,
-        max_tokens=4000,
+        max_tokens=max_tokens,
         messages=[
             {
                 "role": "system",

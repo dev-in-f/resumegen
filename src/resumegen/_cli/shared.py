@@ -78,6 +78,12 @@ def llm_options(f) -> click.Command:
         "Check the litellm documentation for details on how to set this up.",
         envvar="RESUMEGEN_BASE_URL",
     )(f)
+    f = click.option(
+        "--max-tokens",
+        type=int,
+        default=4000,
+        help="Maximum number of tokens to generate.",
+    )(f)
     return click.option(
         "--track-cost",
         is_flag=True,

@@ -72,6 +72,7 @@ def tailor(
     save_to_file: bool = True,
     output_filename_template: str | None = None,
     feedback: bool = False,
+    max_tokens: int = 4000,
 ):
     """Tailor resume data based on a job description using a LLM."""
     _override_logging_options(log_level, log_file, verbose)
@@ -102,6 +103,7 @@ def tailor(
                 output_filename_template,
                 overwrite_existing,
                 feedback,
+                max_tokens=max_tokens,
             )
         if interactive:
             if output_path is not None:

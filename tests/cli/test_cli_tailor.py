@@ -342,6 +342,35 @@ class TestTailorCommand:
         assert call_args[4] == "http://localhost:11434"
 
     @patch("resumegen._cli.tailor.tailor_resume")
+    def test_max_tokens_forwarded(
+        self,
+        mock_tailor,
+        master_data_file,
+        job_description_file,
+        config_file,
+        output_dir,
+    ):
+        mock_tailor.return_value = ("raw yaml content", output_dir / "tailored.yaml")
+        result = runner.invoke(
+            app,
+            [
+                "tailor",
+                str(master_data_file),
+                str(job_description_file),
+                "--config",
+                str(config_file),
+                "--output-dir",
+                str(output_dir),
+                "--model",
+                "gpt-4o",
+                "--max-tokens",
+                "1234",
+            ],
+        )
+        assert result.exit_code == 0
+        assert mock_tailor.call_args.kwargs["max_tokens"] == 1234
+
+    @patch("resumegen._cli.tailor.tailor_resume")
     def test_exits_with_code_1_on_exception(
         self,
         mock_tailor,

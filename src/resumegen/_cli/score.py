@@ -44,12 +44,24 @@ def score(
     base_url: str | None,
     track_cost: bool,
     config_path: Path,
+    max_tokens: int = 4000,
 ):
     _override_logging_options(log_level, log_file, verbose)
     try:
         app_config = _load_yaml_to_data_model(config_path, Config)
         logger.debug("Loaded configuration: %s", app_config)
         score_model = model or app_config.model or os.getenv("RESUMEGEN_MODEL", "")
+        score_model_base_url = (
+            base_url or app_config.base_url or os.getenv("RESUMEGEN_BASEURL", "")
+        )
+
+        if not score_model or score_model.strip() == "":
+            logger.error(
+                "No model specified. Please provide a model "
+                "via command line, config file, "
+                "or environment variable."
+            )
+            raise click.exceptions.Exit(code=1)  # noqa: TRY301
 
         with job_description_file.open() as f:
             job_description_content = f.read()
@@ -61,8 +73,9 @@ def score(
                 master_data_content,
                 job_description_content,
                 model=score_model,
-                base_url=base_url,
+                base_url=score_model_base_url,
                 track_cost=track_cost,
+                max_tokens=max_tokens,
             )
         score_report = yaml.safe_load(raw_score_report)
         score_report = ScoreReport.model_validate(score_report)

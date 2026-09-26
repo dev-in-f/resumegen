@@ -53,19 +53,14 @@ def score_master_data(
     master_data: str,
     job_description: str,
     model: str,
+    max_tokens: int = 4000,
     base_url: str | None = None,
     track_cost: bool = False,
 ) -> str:
-    if model.strip(" ") == "":
-        raise ValueError(
-            "Model parameter is not set. "
-            "Please set it to the model you want to use for scoring resumes."
-        )
-
     litellm.success_callback = [_track_cost] if track_cost else []
     response = completion(
         model=model,
-        max_tokens=4000,
+        max_tokens=max_tokens,
         messages=[
             {
                 "role": "system",
