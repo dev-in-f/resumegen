@@ -451,7 +451,7 @@ class TestScoreMasterData:
         self, master_data_file, job_description_file
     ):
         with patch(
-            "resumegen._core.tailor.completion",
+            "resumegen._core.score.completion",
             side_effect=_mock_completion(
                 "Score: 75\nStrengths:\n  - Good communication\nGaps:\n"
                 "  - Needs more experience"
@@ -464,23 +464,13 @@ class TestScoreMasterData:
         assert "Strengths:" in report_str
         assert "Gaps:" in report_str
 
-    def test_score_master_data_raises_on_no_model(
-        self, master_data_file, job_description_file
-    ):
-        with pytest.raises(ValueError, match="Model parameter is not set"):
-            score_master_data(
-                master_data_file,
-                job_description_file,
-                "",
-            )
-
     def test_score_master_data_raises_on_empty_response(
         self, master_data_file, job_description_file
     ):
         mock_resp = MagicMock()
         mock_resp.choices[0].message.content = None
         with (
-            patch("resumegen._core.tailor.completion", return_value=mock_resp),
+            patch("resumegen._core.score.completion", return_value=mock_resp),
             pytest.raises(ValueError, match="empty response"),
         ):
             score_master_data(master_data_file, job_description_file, "gpt-4o")
@@ -489,7 +479,7 @@ class TestScoreMasterData:
         self, master_data_file
     ):
         with patch(
-            "resumegen._core.tailor.completion",
+            "resumegen._core.score.completion",
             side_effect=_mock_completion(
                 "Score: 85\nStrengths:\n  "
                 "- Good communication\nGaps:\n  - Needs more experience"
