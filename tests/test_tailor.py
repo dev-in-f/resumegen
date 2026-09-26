@@ -9,14 +9,13 @@ from litellm import completion as _litellm_completion
 from pydantic import ValidationError
 
 from resumegen._core.logging import color_message
+from resumegen._core.score import ScoreReport, score_master_data
 from resumegen._core.tailor import (
-    ScoreReport,
     _build_system_prompt,
     _extract_yaml_comments,
     _generate_filename,
     _save_to_file,
     _track_cost,
-    score_master_data,
     tailor_resume,
 )
 
