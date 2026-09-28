@@ -5,7 +5,11 @@ import pytest
 
 from resumegen._core.config import Config, DocumentMetadata
 from resumegen._core.exceptions import PdfError, RenderError
-from resumegen._core.pdf import _pdf_xmp_metadata_injection, render_pdf
+from resumegen._core.pdf import (
+    _pdf_xmp_metadata_injection,
+    render_pdf,
+    render_pdf_from_html,
+)
 
 
 class TestPdfXmpMetadataInjection:
@@ -173,7 +177,7 @@ class TestRenderPdf:
         with patch("resumegen._core.pdf.HTML") as mock_html:
             mock_html.return_value.render.return_value = mock_doc
             with pytest.raises(RenderError):
-                output_path, _ = render_pdf(
+                _, _ = render_pdf(
                     minimal_resume_data,
                     self.config.output_dir,
                     self.config.output_filename,
@@ -183,3 +187,78 @@ class TestRenderPdf:
                 )
 
         assert list(self.config.output_dir.iterdir()) == []
+
+    def test_raises_when_weasyprint_fails(self, minimal_resume_data):
+        with patch("resumegen._core.pdf.HTML") as mock_html:
+            mock_html.return_value.render.side_effect = ValueError("bad html")
+            with pytest.raises(
+                RenderError, match="Failed to convert HTML into PDF: bad html"
+            ):
+                render_pdf(
+                    minimal_resume_data,
+                    self.config.output_dir,
+                    self.config.output_filename,
+                    self.config.template_name,
+                    self.config.template_dir,
+                    scan_pdf_accessibility=False,
+                )
+
+    def test_raises_when_output_exists_and_overwrite_disabled(
+        self, minimal_resume_data
+    ):
+        filename = "existing.pdf"
+        existing = self.config.output_dir / filename
+        existing.write_text("original")
+        with pytest.raises(FileExistsError, match="already exists"):
+            render_pdf(
+                minimal_resume_data,
+                self.config.output_dir,
+                filename,
+                self.config.template_name,
+                self.config.template_dir,
+                scan_pdf_accessibility=False,
+            )
+        assert existing.read_text() == "original"
+
+
+class TestRenderPdfFromHtml:
+    @pytest.fixture
+    def html_file(self, tmp_path):
+        p = tmp_path / "input" / "resume.html"
+        p.parent.mkdir()
+        p.write_text("<html><body><p>Jane Doe</p></body></html>")
+        return p
+
+    def test_uses_html_stem_when_no_filename(self, html_file, tmp_path):
+        output_dir = tmp_path / "out"
+        output_path = render_pdf_from_html(
+            html_file, html_file.parent, output_dir, None
+        )
+        assert output_path == output_dir / "resume.pdf"
+        with pikepdf.open(output_path) as pdf:
+            assert len(pdf.pages) >= 1
+
+    def test_uses_given_filename(self, html_file, tmp_path):
+        output_path = render_pdf_from_html(
+            html_file, html_file.parent, tmp_path, "custom.pdf"
+        )
+        assert output_path == tmp_path / "custom.pdf"
+        assert output_path.exists()
+
+    def test_raises_when_output_exists_and_overwrite_disabled(
+        self, html_file, tmp_path
+    ):
+        existing = tmp_path / "resume.pdf"
+        existing.write_text("original")
+        with pytest.raises(FileExistsError, match="already exists"):
+            render_pdf_from_html(html_file, html_file.parent, tmp_path, None)
+        assert existing.read_text() == "original"
+
+    def test_overwrites_when_enabled(self, html_file, tmp_path):
+        existing = tmp_path / "resume.pdf"
+        existing.write_text("original")
+        output_path = render_pdf_from_html(
+            html_file, html_file.parent, tmp_path, None, overwrite_existing=True
+        )
+        with pikepdf.open(output_path) as pdf:
+            assert len(pdf.pages) >= 1
