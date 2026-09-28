@@ -245,5 +245,9 @@ def list_files_tool() -> str:
     return list_files()
 
 
-if __name__ == "__main__":
+def main():
     mcp.run(transport="stdio")
+
+
+if __name__ == "__main__":
+    main()
