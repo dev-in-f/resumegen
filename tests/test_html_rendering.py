@@ -104,3 +104,30 @@ class TestHTMLRendering:
         assert output_path is not None
         assert output_path.exists()
         assert output_path.parent == missing_dir
+
+    def test_output_html_raises_when_file_exists(self, minimal_resume_data):
+        existing = self.config.output_dir / "existing.html"
+        existing.write_text("original")
+        with pytest.raises(FileExistsError, match="File already exists"):
+            render_html(
+                minimal_resume_data,
+                self.config.output_dir,
+                "existing.pdf",
+                self.config.template_name,
+                self.config.template_dir,
+            )
+        assert existing.read_text() == "original"
+
+    def test_output_html_overrides_existing_when_enabled(self, minimal_resume_data):
+        existing = self.config.output_dir / "existing.html"
+        existing.write_text("original")
+        _, output_path = render_html(
+            minimal_resume_data,
+            self.config.output_dir,
+            "existing.pdf",
+            self.config.template_name,
+            self.config.template_dir,
+            override_existing=True,
+        )
+        assert output_path == existing
+        assert "Jane Doe" in existing.read_text()
