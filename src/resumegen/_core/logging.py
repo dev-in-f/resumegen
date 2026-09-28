@@ -82,7 +82,7 @@ class Spinner:
         self._thread: threading.Thread | None = None
 
     def _spin(self):
-        for frame in itertools.cycle(self.frames):
+        for frame in itertools.cycle(self.frames):  # pragma: no branch
             if self._stop_event.is_set():
                 break
             sys.stdout.write(f"\r{color_message(frame, 'cyan')}  {self.message}")

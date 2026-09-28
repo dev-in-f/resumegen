@@ -1,9 +1,12 @@
+import importlib
 import logging
+from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
 
-from resumegen._cli.shared import _override_logging_options
+from resumegen._cli.shared import _override_logging_options, _split_output_path
+from resumegen.cli import app
 
 runner = CliRunner()
 
@@ -59,3 +62,25 @@ class TestLoggingOverrides:
         _override_logging_options(None, None, verbose=True)
         assert logging.getLogger("resumegen").getEffectiveLevel() == logging.DEBUG
         assert logging.getLogger("resumegen.cli").getEffectiveLevel() == logging.DEBUG
+
+
+class TestSplitOutputPath:
+    def test_none_returns_output_dir(self):
+        assert _split_output_path(None, Path("out")) == (Path("out"), None)
+
+    def test_bare_filename_keeps_output_dir(self):
+        assert _split_output_path("resume.pdf", Path("out")) == (
+            Path("out"),
+            "resume.pdf",
+        )
+
+    def test_path_with_dir_overrides_output_dir(self):
+        assert _split_output_path("nested/dir/resume.pdf", Path("out")) == (
+            Path("nested/dir"),
+            "resume.pdf",
+        )
+
+
+def test_main_module_imports_app():
+    main_module = importlib.import_module("resumegen.__main__")
+    assert main_module.app is app
