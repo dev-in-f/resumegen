@@ -42,7 +42,7 @@ dev = [
     "pytest-cov",
     "uv-dynamic-versioning>=0.14.0",
 ]
-mcp = ["mcp>=1.28.1"]
+mcp = ["mcp>=1.28.1,<2"]
 
 [tool.ruff.lint]
 select = [
