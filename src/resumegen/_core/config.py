@@ -183,6 +183,11 @@ class Config(BaseModel):
             return default_dir.resolve()
         return path.resolve()
 
+    @field_validator("output_dir", mode="before")
+    @classmethod
+    def apply_output_dir_env_override(cls, v):
+        return os.getenv("RESUMEGEN_OUTPUT_DIR") or v
+
     @field_validator("output_dir")
     @classmethod
     def resolve_output_dir(cls, v):

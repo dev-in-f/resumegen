@@ -8,6 +8,7 @@ from pydantic import ValidationError
 
 from resumegen._cli.shared import (
     _load_yaml_to_data_model,
+    _output_base_dir,
     _override_logging_options,
     interactive_options,
     llm_arguments,
@@ -42,10 +43,11 @@ logger = logging.getLogger("resumegen.cli")
     "--output-template",
     "output_filename_template",
     type=str,
-    help="Override the default output filename template, optionally including a "
-    "directory portion (e.g. '{job_title}/tailored.yaml'); any directory in the "
-    "rendered result is created under --output-dir if it doesn't exist. The "
-    "filename can use the placeholders {date}, {job_title}, {model}, and "
+    help="Override the default output filename template. A bare filename is saved "
+    "under the configured output directory (config file or RESUMEGEN_OUTPUT_DIR); "
+    "a relative or absolute path (e.g. './{job_title}/tailored.yaml') is resolved "
+    "against the current working directory instead. Missing directories are "
+    "created. The filename can use the placeholders {date}, {job_title}, {model}, and "
     "{first_line} for dynamic content.",
 )
 @click.option(
@@ -65,7 +67,6 @@ def tailor(
     model: str | None,
     base_url: str | None,
     track_cost: bool,
-    output_dir: Path | None,
     config_path: Path,
     overwrite_existing: bool,
     interactive: bool = True,
@@ -80,7 +81,9 @@ def tailor(
         app_config = _load_yaml_to_data_model(config_path, Config)
         logger.debug("Loaded configuration: %s", app_config)
         tailor_model = model or app_config.model or os.getenv("RESUMEGEN_MODEL", "")
-        working_output_dir = output_dir or app_config.output_dir
+        working_output_dir = _output_base_dir(
+            output_filename_template, app_config.output_dir
+        )
 
         with job_description_file.open() as f:
             job_description_content = f.read()

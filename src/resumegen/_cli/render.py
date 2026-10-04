@@ -6,6 +6,7 @@ from pydantic import ValidationError
 
 from resumegen._cli.shared import (
     _load_yaml_to_data_model,
+    _output_base_dir,
     _override_logging_options,
     interactive_options,
     logging_options,
@@ -44,10 +45,11 @@ logger = logging.getLogger("resumegen.cli")
     "--output-template",
     "output_filename_template",
     type=str,
-    help="Template for the output filename, optionally including a directory "
-    "portion (e.g. '{title}/{author}_resume.pdf'); any directory in the "
-    "rendered result is created under --output-dir if it doesn't exist. "
-    "Supported placeholders: {date}, {author}, {title}, {language}, "
+    help="Template for the output filename. A bare filename is saved under the "
+    "configured output directory (config file or RESUMEGEN_OUTPUT_DIR); a "
+    "relative or absolute path (e.g. './{title}/{author}_resume.pdf') is resolved "
+    "against the current working directory instead. Missing directories are "
+    "created. Supported placeholders: {date}, {author}, {title}, {language}, "
     "{description}, {keywords}. (Matches DocumentMetadata)",
 )
 @click.option(
@@ -68,7 +70,6 @@ def render(
     log_level: str | None,
     log_file: Path | None,
     verbose: bool,
-    output_dir: Path | None,
     output_filename_template: str | None,
     overwrite_existing: bool,
     template_dir: Path | None,
@@ -107,7 +108,9 @@ def render(
 
         working_template_dir = template_dir or config_data.template_dir
         working_template_name = template_name or config_data.template_name
-        working_output_dir = output_dir or config_data.output_dir
+        working_output_dir = _output_base_dir(
+            output_filename_template, config_data.output_dir
+        )
         working_output_filename = (
             output_filename_template or config_data.output_filename
         )

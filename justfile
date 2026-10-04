@@ -1,5 +1,5 @@
 default:
-    @just list
+    @just --list
 
 alias bi := build-image
 
@@ -13,7 +13,7 @@ build-image:
 update-readme:
     #!/usr/bin/env python3
     from string import Template
-    with open("dev/readme-template.md") as f:
+    with open("docs/readme-template.md") as f:
         template_content = Template(f.read())
     with open("README.md", "w") as f:
         f.write(template_content.substitute(version="{{ version }}"))

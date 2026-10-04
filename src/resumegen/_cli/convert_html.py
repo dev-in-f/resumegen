@@ -5,8 +5,8 @@ import click
 
 from resumegen._cli.shared import (
     _load_yaml_to_data_model,
+    _output_base_dir,
     _override_logging_options,
-    _split_output_path,
     logging_options,
     render_options,
 )
@@ -47,15 +47,16 @@ logger = logging.getLogger("resumegen.cli")
     "--output-name",
     type=str,
     default=None,
-    help="Output filename for the generated PDF. May include a directory "
-    "(e.g. 'out/resume.pdf'), which is created if it doesn't exist and "
-    "takes precedence over --output-dir. Uses the input filename if not provided.",
+    help="Output filename for the generated PDF. A bare filename is saved under "
+    "the configured output directory (config file or RESUMEGEN_OUTPUT_DIR); a "
+    "relative or absolute path (e.g. './resume.pdf', 'out/resume.pdf') is "
+    "resolved against the current working directory instead. Missing "
+    "directories are created. Uses the input filename if not provided.",
 )
 def convert_html(
     html_file: Path,
     config_path: Path,
     assets_dir: Path | None,
-    output_dir: Path | None,
     log_level: str | None,
     log_file: Path | None,
     verbose: bool,
@@ -71,8 +72,7 @@ def convert_html(
             click.echo(color_message("⚙️  Configuration loaded successfully!", "green"))
         if not assets_dir:
             assets_dir = config.template_dir or html_file.parent
-        embedded_dir, output_name = _split_output_path(output_name, output_dir)
-        working_output_dir = embedded_dir or output_dir or config.output_dir
+        working_output_dir = _output_base_dir(output_name, config.output_dir)
         with Spinner(f"🖨️  Converting {html_file} to PDF...", enabled=interactive):
             output_path = render_pdf_from_html(
                 html_file,

@@ -1,4 +1,5 @@
 import logging
+import os
 from pathlib import Path
 
 import click
@@ -10,12 +11,6 @@ from resumegen._core.logging import LIBRARY_LOGGERS
 
 
 def render_options(f) -> click.Command:
-    f = click.option(
-        "--output-dir",
-        default=None,
-        type=click.Path(exists=False, file_okay=False, dir_okay=True, path_type=Path),
-        help="Directory to save the generated data.",
-    )(f)
     f = click.option(
         "-c",
         "--config",
@@ -133,17 +128,17 @@ def _load_yaml_to_data_model[T: BaseModel](file_path: Path, model: type[T]) -> T
         return model.model_validate(data)
 
 
-def _split_output_path(
-    output_value: str | None, output_dir: Path | None
-) -> tuple[Path | None, str | None]:
-    """Split output option into directory portion and
-    filename portion if that's the input format."""
-    if output_value:
-        path = Path(output_value)
-        if path.parent != Path():
-            return path.parent, path.name
-        return output_dir, output_value
-    return output_dir, output_value
+def _output_base_dir(output_value: str | None, default_dir: Path) -> Path:
+    """Return the directory an output option value is resolved against.
+
+    A bare filename is placed under default_dir (the configured output directory).
+    A value with a directory portion, relative or absolute, bypasses it and is
+    resolved against the current working directory instead. The raw string is
+    checked since pathlib normalizes './name' to 'name'.
+    """
+    if output_value and any(sep in output_value for sep in (os.sep, os.altsep) if sep):
+        return Path.cwd()
+    return default_dir
 
 
 def interactive_options(f) -> click.Command:

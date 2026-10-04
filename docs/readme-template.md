@@ -25,8 +25,7 @@ uv tool install git+https://codeberg.org/intothebeans/resumegen.git@v${version}
 ```
 --log-level                   TEXT       Logging level (e.g., INFO, DEBUG). [env var: RESUMEGEN_LOG_LEVEL]
 --log-file                    PATH       Path to the log file. [env var: RESUMEGEN_LOG_FILE]
---output-dir                  DIRECTORY  Directory to save the generated resume.
---output-template             TEXT       Filename template for the generated resume.
+--output-template     -o      TEXT       Filename template for the generated resume. A bare filename is saved under the output directory; a relative or absolute path is resolved against the current directory.
 --force               -f                 Allow overwrite of existing output file.
 --template-dir                PATH       Directory containing the resume templates.
 --template            -t      TEXT       Filename of the resume template to use.
@@ -69,6 +68,8 @@ The following can only be set using environment variables, and not in the config
 | ----------------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | RESUMEGEN_DATA_DIR            | `~/.config/resumegen`             | Directory where resumegen stores its data, uses the platform-specific user config directory if not set                                   |
 | RESUMEGEN_DEFAULT_CONFIG_PATH | `~/.config/resumegen/config.yaml` | Path to the default configuration file used when no other file is specified, uses the platform-specific user config directory if not set |
+
+`RESUMEGEN_OUTPUT_DIR` overrides `output_dir` from the configuration file. This is the directory output files are saved to when `-o`/`--output-template` is a bare filename (or not given); a relative or absolute path passed to `-o` is resolved against the current working directory instead.
 
 ### Config File
 
