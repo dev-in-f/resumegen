@@ -55,10 +55,15 @@ def job_description_file(tmp_path):
     return p
 
 
+@pytest.fixture(autouse=True)
+def _clear_output_dir_env(monkeypatch):
+    monkeypatch.delenv("RESUMEGEN_OUTPUT_DIR", raising=False)
+
+
 @pytest.fixture
 def config_file(tmp_path):
     p = tmp_path / "config.yaml"
-    p.write_text(MINIMAL_CONFIG_YAML)
+    p.write_text(MINIMAL_CONFIG_YAML + f"output_dir: {tmp_path / 'output'}\n")
     return p
 
 

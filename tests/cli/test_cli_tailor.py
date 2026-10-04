@@ -28,8 +28,6 @@ class TestTailorCommand:
                 str(job_description_file),
                 "--config",
                 str(config_file),
-                "--output-dir",
-                str(output_dir),
                 "--model",
                 "gpt-4o",
             ],
@@ -55,8 +53,6 @@ class TestTailorCommand:
                 str(job_description_file),
                 "--config",
                 str(config_file),
-                "--output-dir",
-                str(output_dir),
                 "--model",
                 "gpt-4o",
                 "--track-cost",
@@ -85,8 +81,6 @@ class TestTailorCommand:
                 str(job_description_file),
                 "--config",
                 str(config_file),
-                "--output-dir",
-                str(output_dir),
                 "--model",
                 "gpt-4o",
                 "--no-save",
@@ -114,8 +108,6 @@ class TestTailorCommand:
                 str(job_description_file),
                 "--config",
                 str(config_file),
-                "--output-dir",
-                str(output_dir),
                 "--model",
                 "gpt-4o",
                 "--job-title",
@@ -144,8 +136,6 @@ class TestTailorCommand:
                 str(job_description_file),
                 "--config",
                 str(config_file),
-                "--output-dir",
-                str(output_dir),
                 "--model",
                 "gpt-4o",
                 "-o",
@@ -154,10 +144,11 @@ class TestTailorCommand:
         )
         assert result.exit_code == 0
         call_args = mock_tailor.call_args.args
+        assert call_args[2] == output_dir
         assert call_args[8] == "custom_{date}.yaml"
 
     @patch("resumegen._cli.tailor.tailor_resume")
-    def test_output_template_with_dir_nests_under_output_dir(
+    def test_output_template_with_dir_resolves_against_cwd(
         self,
         mock_tailor,
         master_data_file,
@@ -165,7 +156,9 @@ class TestTailorCommand:
         config_file,
         output_dir,
         tmp_path,
+        monkeypatch,
     ):
+        monkeypatch.chdir(tmp_path)
         mock_tailor.return_value = ("raw yaml content", output_dir / "tailored.yaml")
         result = runner.invoke(
             app,
@@ -175,8 +168,6 @@ class TestTailorCommand:
                 str(job_description_file),
                 "--config",
                 str(config_file),
-                "--output-dir",
-                str(output_dir),
                 "--model",
                 "gpt-4o",
                 "--output-template",
@@ -185,7 +176,7 @@ class TestTailorCommand:
         )
         assert result.exit_code == 0
         call_args = mock_tailor.call_args.args
-        assert call_args[2] == output_dir
+        assert call_args[2] == tmp_path
         assert call_args[8] == "{job_title}/custom_{date}.yaml"
 
     @patch("resumegen._cli.tailor.tailor_resume")
@@ -206,8 +197,6 @@ class TestTailorCommand:
                 str(job_description_file),
                 "--config",
                 str(config_file),
-                "--output-dir",
-                str(output_dir),
                 "--model",
                 "gpt-4o",
                 "--no-interactive",
@@ -236,8 +225,6 @@ class TestTailorCommand:
                 str(job_description_file),
                 "--config",
                 str(config_file),
-                "--output-dir",
-                str(output_dir),
                 "--model",
                 "gpt-4o",
                 "--no-interactive",
@@ -269,8 +256,6 @@ class TestTailorCommand:
                 str(job_description_file),
                 "--config",
                 str(config_file),
-                "--output-dir",
-                str(output_dir),
                 "--model",
                 "gpt-4o",
                 "--feedback",
@@ -300,8 +285,6 @@ class TestTailorCommand:
                 str(job_description_file),
                 "--config",
                 str(config_file),
-                "--output-dir",
-                str(output_dir),
                 "--model",
                 "gpt-4o",
             ],
@@ -329,8 +312,6 @@ class TestTailorCommand:
                 str(job_description_file),
                 "--config",
                 str(config_file),
-                "--output-dir",
-                str(output_dir),
                 "--model",
                 "mymodel",
                 "--base-url",
@@ -359,8 +340,6 @@ class TestTailorCommand:
                 str(job_description_file),
                 "--config",
                 str(config_file),
-                "--output-dir",
-                str(output_dir),
                 "--model",
                 "gpt-4o",
                 "--max-tokens",
@@ -388,8 +367,6 @@ class TestTailorCommand:
                 str(job_description_file),
                 "--config",
                 str(config_file),
-                "--output-dir",
-                str(output_dir),
                 "--model",
                 "gpt-4o",
             ],
@@ -411,8 +388,6 @@ class TestTailorCommand:
                 str(job_description_file),
                 "--config",
                 str(config),
-                "--output-dir",
-                str(output_dir),
             ],
             env={"RESUMEGEN_MODEL": ""},
         )
@@ -435,8 +410,6 @@ class TestTailorCommand:
                     str(job_description_file),
                     "--config",
                     str(config_file),
-                    "--output-dir",
-                    str(output_dir),
                     "--model",
                     "gpt-4o",
                 ],
@@ -459,8 +432,6 @@ class TestTailorCommand:
                     str(job_description_file),
                     "--config",
                     str(config_file),
-                    "--output-dir",
-                    str(output_dir),
                     "--model",
                     "gpt-4o",
                 ],
@@ -483,8 +454,6 @@ class TestTailorCommand:
                     str(job_description_file),
                     "--config",
                     str(config_file),
-                    "--output-dir",
-                    str(output_dir),
                     "--model",
                     "gpt-4o",
                 ],
@@ -509,8 +478,6 @@ class TestTailorCommand:
                     str(job_description_file),
                     "--config",
                     str(config_file),
-                    "--output-dir",
-                    str(output_dir),
                     "--model",
                     "gpt-4o",
                 ],
@@ -533,8 +500,6 @@ class TestTailorCommand:
                     str(job_description_file),
                     "--config",
                     str(config_file),
-                    "--output-dir",
-                    str(output_dir),
                     "--model",
                     "gpt-4o",
                 ],
@@ -559,8 +524,6 @@ class TestTailorCommand:
                     str(job_description_file),
                     "--config",
                     str(config_file),
-                    "--output-dir",
-                    str(output_dir),
                     "--model",
                     "gpt-4o",
                 ],
@@ -583,8 +546,6 @@ class TestTailorCommand:
                     str(job_description_file),
                     "--config",
                     str(config_file),
-                    "--output-dir",
-                    str(output_dir),
                     "--model",
                     "gpt-4o",
                 ],

@@ -45,8 +45,6 @@ class TestConvertHtmlCommand:
                 str(html_file),
                 "--config",
                 str(convert_config_file),
-                "--output-dir",
-                str(output_dir),
             ],
         )
         assert result.exit_code == 0
@@ -66,8 +64,6 @@ class TestConvertHtmlCommand:
                 str(html_file),
                 "--config",
                 str(convert_config_file),
-                "--output-dir",
-                str(output_dir),
                 "--no-interactive",
             ],
         )
@@ -86,8 +82,6 @@ class TestConvertHtmlCommand:
                 str(html_file),
                 "--config",
                 str(convert_config_file),
-                "--output-dir",
-                str(output_dir),
             ],
         )
         assert result.exit_code == 0
@@ -107,8 +101,6 @@ class TestConvertHtmlCommand:
                 str(html_file),
                 "--config",
                 str(convert_config_file),
-                "--output-dir",
-                str(output_dir),
                 "--assets-dir",
                 str(assets_dir),
             ],
@@ -117,10 +109,10 @@ class TestConvertHtmlCommand:
         assert mock_render.call_args.args[1] == assets_dir
 
     @patch("resumegen._cli.convert_html.render_pdf_from_html")
-    def test_output_dir_and_name_forwarded(
-        self, mock_render, html_file, convert_config_file, output_dir
+    def test_bare_output_name_saved_under_config_output_dir(
+        self, mock_render, html_file, convert_config_file, tmp_path
     ):
-        mock_render.return_value = output_dir / "custom.pdf"
+        mock_render.return_value = tmp_path / "cfg_out" / "custom.pdf"
         result = runner.invoke(
             app,
             [
@@ -128,8 +120,6 @@ class TestConvertHtmlCommand:
                 str(html_file),
                 "--config",
                 str(convert_config_file),
-                "--output-dir",
-                str(output_dir),
                 "-o",
                 "custom.pdf",
                 "--force",
@@ -138,15 +128,25 @@ class TestConvertHtmlCommand:
         assert result.exit_code == 0
         call_args = mock_render.call_args.args
         assert call_args[0] == html_file
-        assert call_args[2] == output_dir
+        assert call_args[2] == tmp_path / "cfg_out"
         assert call_args[3] == "custom.pdf"
         assert call_args[4] is True
 
+    @pytest.mark.parametrize(
+        "output_name", ["./custom.pdf", "nested/custom.pdf", "../custom.pdf"]
+    )
     @patch("resumegen._cli.convert_html.render_pdf_from_html")
-    def test_output_name_with_dir_takes_precedence_over_output_dir(
-        self, mock_render, html_file, convert_config_file, tmp_path, output_dir
+    def test_relative_output_path_resolves_against_cwd(
+        self,
+        mock_render,
+        output_name,
+        html_file,
+        convert_config_file,
+        tmp_path,
+        monkeypatch,
     ):
-        mock_render.return_value = tmp_path / "nested" / "custom.pdf"
+        monkeypatch.chdir(tmp_path)
+        mock_render.return_value = tmp_path / "custom.pdf"
         result = runner.invoke(
             app,
             [
@@ -154,16 +154,35 @@ class TestConvertHtmlCommand:
                 str(html_file),
                 "--config",
                 str(convert_config_file),
-                "--output-dir",
-                str(output_dir),
                 "-o",
-                str(tmp_path / "nested" / "custom.pdf"),
+                output_name,
             ],
         )
         assert result.exit_code == 0
         call_args = mock_render.call_args.args
-        assert call_args[2] == tmp_path / "nested"
-        assert call_args[3] == "custom.pdf"
+        assert call_args[2] == tmp_path
+        assert call_args[3] == output_name
+
+    @patch("resumegen._cli.convert_html.render_pdf_from_html")
+    def test_absolute_output_path_ignores_config_output_dir(
+        self, mock_render, html_file, convert_config_file, tmp_path
+    ):
+        absolute = tmp_path / "nested" / "custom.pdf"
+        mock_render.return_value = absolute
+        result = runner.invoke(
+            app,
+            [
+                "convert-html",
+                str(html_file),
+                "--config",
+                str(convert_config_file),
+                "-o",
+                str(absolute),
+            ],
+        )
+        assert result.exit_code == 0
+        call_args = mock_render.call_args.args
+        assert call_args[2] / call_args[3] == absolute
 
     @patch("resumegen._cli.convert_html.render_pdf_from_html")
     def test_output_dir_falls_back_to_config(
@@ -182,6 +201,25 @@ class TestConvertHtmlCommand:
         assert result.exit_code == 0
         assert mock_render.call_args.args[2] == tmp_path / "cfg_out"
         assert mock_render.call_args.args[3] is None
+
+    @patch("resumegen._cli.convert_html.render_pdf_from_html")
+    def test_output_dir_env_var_overrides_config(
+        self, mock_render, html_file, convert_config_file, tmp_path, monkeypatch
+    ):
+        env_dir = tmp_path / "env_out"
+        monkeypatch.setenv("RESUMEGEN_OUTPUT_DIR", str(env_dir))
+        mock_render.return_value = env_dir / "resume.pdf"
+        result = runner.invoke(
+            app,
+            [
+                "convert-html",
+                str(html_file),
+                "--config",
+                str(convert_config_file),
+            ],
+        )
+        assert result.exit_code == 0
+        assert mock_render.call_args.args[2] == env_dir
 
     @pytest.mark.parametrize(
         ("error", "message"),
@@ -204,8 +242,6 @@ class TestConvertHtmlCommand:
                     str(html_file),
                     "--config",
                     str(convert_config_file),
-                    "--output-dir",
-                    str(output_dir),
                 ],
             )
         assert result.exit_code == 1

@@ -238,6 +238,13 @@ class TestRenderPdfFromHtml:
         with pikepdf.open(output_path) as pdf:
             assert len(pdf.pages) >= 1
 
+    def test_creates_nested_dirs_in_filename(self, html_file, tmp_path):
+        output_path = render_pdf_from_html(
+            html_file, html_file.parent, tmp_path, "nested/dir/custom.pdf"
+        )
+        assert output_path == tmp_path / "nested" / "dir" / "custom.pdf"
+        assert output_path.exists()
+
     def test_uses_given_filename(self, html_file, tmp_path):
         output_path = render_pdf_from_html(
             html_file, html_file.parent, tmp_path, "custom.pdf"

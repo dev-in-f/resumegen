@@ -284,6 +284,16 @@ class TestConfig:
         assert config.output_dir.exists()
         assert config.output_dir.is_dir()
 
+    def test_output_dir_env_var_overrides_config_value(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("RESUMEGEN_OUTPUT_DIR", str(tmp_path / "env_out"))
+        config = Config(output_dir=tmp_path / "cfg_out")
+        assert config.output_dir == (tmp_path / "env_out").resolve()
+        assert config.output_dir.is_dir()
+
+    def test_output_dir_env_var_overrides_default(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("RESUMEGEN_OUTPUT_DIR", str(tmp_path / "env_out"))
+        assert Config().output_dir == (tmp_path / "env_out").resolve()
+
     def test_output_dir_is_not_dir_uses_default(self, not_a_dir_path):
         config = Config(output_dir=not_a_dir_path)
         assert config.output_dir != not_a_dir_path

@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from resumegen._cli.shared import _override_logging_options, _split_output_path
+from resumegen._cli.shared import _output_base_dir, _override_logging_options
 from resumegen.cli import app
 
 runner = CliRunner()
@@ -64,21 +64,24 @@ class TestLoggingOverrides:
         assert logging.getLogger("resumegen.cli").getEffectiveLevel() == logging.DEBUG
 
 
-class TestSplitOutputPath:
-    def test_none_returns_output_dir(self):
-        assert _split_output_path(None, Path("out")) == (Path("out"), None)
+class TestOutputBaseDir:
+    def test_none_returns_default_dir(self):
+        assert _output_base_dir(None, Path("out")) == Path("out")
 
-    def test_bare_filename_keeps_output_dir(self):
-        assert _split_output_path("resume.pdf", Path("out")) == (
-            Path("out"),
-            "resume.pdf",
-        )
+    def test_bare_filename_returns_default_dir(self):
+        assert _output_base_dir("resume.pdf", Path("out")) == Path("out")
 
-    def test_path_with_dir_overrides_output_dir(self):
-        assert _split_output_path("nested/dir/resume.pdf", Path("out")) == (
-            Path("nested/dir"),
-            "resume.pdf",
-        )
+    @pytest.mark.parametrize(
+        "value", ["./resume.pdf", "nested/dir/resume.pdf", "../resume.pdf"]
+    )
+    def test_relative_path_returns_cwd(self, value, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        assert _output_base_dir(value, Path("out")) == tmp_path
+
+    def test_absolute_path_bypasses_default_dir(self, tmp_path):
+        absolute = tmp_path / "resume.pdf"
+        base = _output_base_dir(str(absolute), Path("out"))
+        assert base / str(absolute) == absolute
 
 
 def test_main_module_imports_app():

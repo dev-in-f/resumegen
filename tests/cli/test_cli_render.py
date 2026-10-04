@@ -21,8 +21,6 @@ class TestRenderCommand:
                 str(data_file),
                 "--config",
                 str(config_file),
-                "--output-dir",
-                str(output_dir),
             ],
         )
         assert result.exit_code == 0
@@ -40,8 +38,6 @@ class TestRenderCommand:
                 str(data_file),
                 "--config",
                 str(config_file),
-                "--output-dir",
-                str(output_dir),
                 "--html-only",
             ],
         )
@@ -60,8 +56,6 @@ class TestRenderCommand:
                 str(data_file),
                 "--config",
                 str(config_file),
-                "--output-dir",
-                str(output_dir),
             ],
         )
         assert result.exit_code == 1
@@ -78,8 +72,6 @@ class TestRenderCommand:
                 str(data_file),
                 "--config",
                 str(config_file),
-                "--output-dir",
-                str(output_dir),
                 "--author",
                 "Override Author",
             ],
@@ -102,8 +94,6 @@ class TestRenderCommand:
                 str(data_file),
                 "--config",
                 str(config_file),
-                "--output-dir",
-                str(output_dir),
                 "--title",
                 "Custom Title",
             ],
@@ -122,8 +112,6 @@ class TestRenderCommand:
                 str(data_file),
                 "--config",
                 str(config_file),
-                "--output-dir",
-                str(output_dir),
                 "--force",
             ],
         )
@@ -147,8 +135,6 @@ class TestRenderCommand:
                 str(data_file),
                 "--config",
                 str(config_file),
-                "--output-dir",
-                str(output_dir),
                 "--template-dir",
                 str(template_dir),
                 "--template-name",
@@ -172,8 +158,6 @@ class TestRenderCommand:
                 str(data_file),
                 "--config",
                 str(config_file),
-                "--output-dir",
-                str(output_dir),
             ],
         )
         assert result.exit_code == 0
@@ -196,8 +180,6 @@ class TestRenderCommand:
                     str(data_file),
                     "--config",
                     str(config_file),
-                    "--output-dir",
-                    str(output_dir),
                 ],
             )
             assert result.exit_code == 0
@@ -215,8 +197,6 @@ class TestRenderCommand:
                 str(bad),
                 "--config",
                 str(config_file),
-                "--output-dir",
-                str(output_dir),
             ],
         )
         assert result.exit_code == 1
@@ -233,20 +213,20 @@ class TestRenderCommand:
                 str(data_file),
                 "--config",
                 str(config_file),
-                "--output-dir",
-                str(output_dir),
                 "--output-template",
                 "my_{author}.pdf",
             ],
         )
         assert result.exit_code == 0
         call_args = mock_render.call_args.args
+        assert call_args[1] == output_dir
         assert call_args[2] == "my_{author}.pdf"
 
     @patch("resumegen._cli.render.render_pdf")
-    def test_output_template_with_dir_nests_under_output_dir(
-        self, mock_render, data_file, config_file, output_dir, tmp_path
+    def test_output_template_with_dir_resolves_against_cwd(
+        self, mock_render, data_file, config_file, output_dir, tmp_path, monkeypatch
     ):
+        monkeypatch.chdir(tmp_path)
         mock_render.return_value = (output_dir / "resume.pdf", None)
         result = runner.invoke(
             app,
@@ -255,15 +235,13 @@ class TestRenderCommand:
                 str(data_file),
                 "--config",
                 str(config_file),
-                "--output-dir",
-                str(output_dir),
                 "--output-template",
                 "{title}/my_{author}.pdf",
             ],
         )
         assert result.exit_code == 0
         call_args = mock_render.call_args.args
-        assert call_args[1] == output_dir
+        assert call_args[1] == tmp_path
         assert call_args[2] == "{title}/my_{author}.pdf"
 
     @patch("resumegen._cli.render.render_html")
@@ -279,8 +257,6 @@ class TestRenderCommand:
                 str(data_file),
                 "--config",
                 str(config_file),
-                "--output-dir",
-                str(output_dir),
                 "--html-only",
                 "--no-interactive",
                 "--save",
@@ -302,8 +278,6 @@ class TestRenderCommand:
                 str(data_file),
                 "--config",
                 str(config_file),
-                "--output-dir",
-                str(output_dir),
                 "--html-only",
                 "--no-interactive",
                 "--no-save",
@@ -325,8 +299,6 @@ class TestRenderCommand:
                 str(data_file),
                 "--config",
                 str(config_file),
-                "--output-dir",
-                str(output_dir),
                 "--html-only",
                 "--no-save",
             ],
@@ -348,8 +320,6 @@ class TestRenderCommand:
                 str(data_file),
                 "--config",
                 str(config_file),
-                "--output-dir",
-                str(output_dir),
                 "--no-interactive",
             ],
         )
