@@ -9,7 +9,7 @@ A Python tool for rendering resumes from structured data with optional AI integr
 - [WeasyPrint](https://weasyprint.org/) (for PDF generation): Please follow the instructions for your platform from the [WeasyPrint docs](https://doc.courtbouillon.org/weasyprint/stable/first_steps.html).
 
 ```bash
-uv tool install resumegen
+uv tool install resumegen-cli
 ```
 
 ## Usage

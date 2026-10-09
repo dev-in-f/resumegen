@@ -1,5 +1,5 @@
 [project]
-name = "resumegen"
+name = "resumegen-cli"
 dynamic = ["version"]
 description = "A Python tool for rendering resumes from structured data with some LLM assistance on the side"
 readme = "README.md"
@@ -84,3 +84,6 @@ ignore = ["TRY003"]
 
 [tool.pyright]
 ignore = ["tests/**"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/resumegen"]
