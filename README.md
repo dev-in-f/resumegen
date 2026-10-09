@@ -28,7 +28,7 @@ Use `resumegen COMMAND --help` to learn more about the available options and arg
 
 ### Structured Data Files
 
-There are examples for a [Master Resume file](examples/master-resume.html), a [Resume Data file](examples/resume-data.yaml), and [configuration file](examples/config.yaml) in the examples directory. The schemas for these files can be found under `src/resumegen/schemas`.
+There are examples for a [Master Resume file](https://github.com/dev-in-f/resumegen/blob/main/examples/master-resume.yaml), a [Resume Data file](https://github.com/dev-in-f/resumegen/blob/main/examples/resume-data.yaml), and [configuration file](https://github.com/dev-in-f/resumegen/blob/main/examples/config.yaml) in the examples directory. The schemas for these files can be found under `src/resumegen/schemas`.
 
 ## Configuration
 
