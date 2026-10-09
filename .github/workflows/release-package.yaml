@@ -1,7 +1,7 @@
 name: release-package
 on:
   push:
-    tags: ["v*", ! "v*rc*"]
+    tags: ["v*", "!v*rc*"]
 
 jobs:
   test:
