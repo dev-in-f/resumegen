@@ -16,7 +16,6 @@ def _install_default_config():
         Path(RESUMEGEN_DATA_DIR).mkdir(parents=True, exist_ok=True)
     config_path = RESUMEGEN_DEFAULT_CONFIG_PATH
     if not Path(config_path).exists():
-        print(f"Creating default config at {config_path}")
         default_config = Config().model_dump(mode="json")
         Path(config_path).parent.mkdir(parents=True, exist_ok=True)
         with Path(config_path).open("w") as f:
