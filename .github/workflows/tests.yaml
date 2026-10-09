@@ -1,0 +1,26 @@
+---
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_call:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up UV
+        uses: astral-sh/setup-uv@v10
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Static analysis
+        run: uv run ruff check .
+
+      - name: Run tests
+        run: uv run pytest tests/
