@@ -1867,7 +1867,7 @@ wheels = [
 ]
 
 [[package]]
-name = "resumegen"
+name = "resumegen-cli"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
