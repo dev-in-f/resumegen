@@ -1,16 +1,12 @@
 # resumegen
 
-> [!caution] Docs are WIP
-
-A python tool for generating resumes from YAML data and rendering them to accessible (machine parsable) PDFs.
-Currently, the data structure available is fixed, but the Jinja templates and CSS can be customized.
+A Python tool for rendering resumes from structured data with optional AI integration for tailoring data and scoring against job descriptions. The main goal of the utility is to provide separation between the content and the style and layout of a resume, preventing the headache of having to reformat a document every time the information is modified. This separation also makes the process of tailoring your set of skills using an LLM easier, since it only needs to operate on text, not worry about managing a PDF.
 
 ## Installation
 
 **Dependencies**
 
-- [WeasyPrint](https://weasyprint.org/) (for PDF generation) Please follow the instructions for your platform from the [WeasyPrint docs](https://doc.courtbouillon.org/weasyprint/stable/first_steps.html).
-- [uv](https://github.com/astral-sh/uv)
+- [WeasyPrint](https://weasyprint.org/) (for PDF generation): Please follow the instructions for your platform from the [WeasyPrint docs](https://doc.courtbouillon.org/weasyprint/stable/first_steps.html).
 
 ```bash
 uv tool install resumegen
@@ -18,47 +14,25 @@ uv tool install resumegen
 
 ## Usage
 
-`resumegen [OPTIONS] DATA_FILE`
+### Available Commands
 
-**Options**
+Usage: `resumegen COMMAND [OPTIONS] [ARGUMENTS]`
 
-```
---log-level                   TEXT       Logging level (e.g., INFO, DEBUG). [env var: RESUMEGEN_LOG_LEVEL]
---log-file                    PATH       Path to the log file. [env var: RESUMEGEN_LOG_FILE]
---output-template     -o      TEXT       Filename template for the generated resume. A bare filename is saved under the output directory; a relative or absolute path is resolved against the current directory.
---force               -f                 Allow overwrite of existing output file.
---template-dir                PATH       Directory containing the resume templates.
---template            -t      TEXT       Filename of the resume template to use.
---author                      TEXT       Author of the resume.
---title                       TEXT       Title of the resume.
---html                                   Render HTML only, no PDF generation.
---config              -c      FILE       Path to the configuration file. Defaults to ~/.config/resumegen/config.yaml [env var: RESUMEGEN_DEFAULT_CONFIG_PATH]
---install-completion                     Install completion for the current shell.
---show-completion                        Show completion for the current shell, to copy it or customize the installation.
---help                                   Show this message and exit.
-```
+- `render`: Renders a resume using a resume data YAML file into a PDF using a Jinja2 template
+- `tailor`: Tailors a resume data file based on a given job description and master resume file using an LLM
+- `score`: Scores the information from the master resume file against the given job description
+- `scan-pdf`: Scans a PDF for accessibility issues
+- `render-html`: Renders an existing HTML file to a PDF
 
-### MCP
+Use `resumegen COMMAND --help` to learn more about the available options and arguments for each command
 
-The MCP server is designed to be run via docker, and supports both HTTP and STDIO methods for clients.
+### Structured Data Files
 
-### Resume Data
-
-Check out the [example](examples/resume-data.yaml) for a general idea of the structure. The [schema](schemas/resume-data.json) can be used to explore the data structure in more detail.
-
-## Development
-
-### Installation
-
-Run the following command:
-
-```bash
-uv sync && uv pip install -e .
-```
+There are examples for a [Master Resume file](examples/master-resume.html), a [Resume Data file](examples/resume-data.yaml), and [configuration file](examples/config.yaml) in the examples directory. The schemas for these files can be found under `src/resumegen/schemas`.
 
 ## Configuration
 
-There are three ways to supply configuration to the tool, and not all options are available in all methods. The order of precedence is as follows: environment variables, command line, and configuration file. The configuration file is optional, but if it is used, it must be a YAML file.
+Certain options are available for configuration through environment variables or the configuration file. They may not be available in both. Precedence is given to CLI arguments, then environment variables, then the configuration file.
 
 ### Environment Variables
 
@@ -66,11 +40,6 @@ The following can only be set using environment variables, and not in the config
 
 | Variable                      | Default                           | Description                                                                                                                              |
 | ----------------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| RESUMEGEN_DATA_DIR            | `~/.config/resumegen`             | Directory where resumegen stores its data, uses the platform-specific user config directory if not set                                   |
+| RESUMEGEN_DATA_DIR            | `~/.local/share/resumegen`        | Directory where resumegen stores its data, uses the platform-specific user config directory if not set                                   |
 | RESUMEGEN_DEFAULT_CONFIG_PATH | `~/.config/resumegen/config.yaml` | Path to the default configuration file used when no other file is specified, uses the platform-specific user config directory if not set |
-
-`RESUMEGEN_OUTPUT_DIR` overrides `output_dir` from the configuration file. This is the directory output files are saved to when `-o`/`--output-template` is a bare filename (or not given); a relative or absolute path passed to `-o` is resolved against the current working directory instead.
-
-### Config File
-
-Check out [examples/config.yaml](examples/config.yaml) for an example configuration file. The configuration file is optional, but if it is used, it must be a YAML file matching the JSON [schema](schemas/config.json).
+| RESUMEGEN_ENV_PATH            | `.env`                            | The path to an environment variable file to load                                                                                         |
