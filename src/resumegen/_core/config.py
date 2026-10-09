@@ -93,20 +93,6 @@ class ResumeData(BaseModel):
     education: list[EducationEntry] = []
 
 
-# ▄▄▄      ▄▄▄  ▄▄▄▄▄▄▄ ▄▄▄▄▄▄▄
-# ████▄  ▄████ ███▀▀▀▀▀ ███▀▀███▄
-# ███▀████▀███ ███      ███▄▄███▀
-# ███  ▀▀  ███ ███      ███▀▀▀▀
-# ███      ███ ▀███████ ███
-
-
-class SessionConfig(BaseModel):
-    output_dir: Path = RESUMEGEN_DATA_DIR / "output"
-    output_filename: str = "{author}_resume_{date}.pdf"
-    template_name: str = "template.html.j2"
-    overwrite_existing: bool = False
-
-
 # ▄▄▄      ▄▄▄                                 ▄▄▄▄▄▄
 # ████▄  ▄████              ██                 ███▀▀██▄        ██
 # ███▀████▀███  ▀▀█▄ ▄█▀▀▀ ▀██▀▀ ▄█▀█▄ ████▄   ███  ███  ▀▀█▄ ▀██▀▀ ▀▀█▄

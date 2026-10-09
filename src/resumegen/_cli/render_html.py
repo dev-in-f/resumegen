@@ -53,7 +53,7 @@ logger = logging.getLogger("resumegen.cli")
     "resolved against the current working directory instead. Missing "
     "directories are created. Uses the input filename if not provided.",
 )
-def convert_html(
+def render_html(
     html_file: Path,
     config_path: Path,
     assets_dir: Path | None,

@@ -46,6 +46,7 @@ def score(
     config_path: Path,
     max_tokens: int = 4000,
 ):
+    """Score the given master resume data against a job description"""
     _override_logging_options(log_level, log_file, verbose)
     try:
         app_config = _load_yaml_to_data_model(config_path, Config)
