@@ -32,7 +32,7 @@ def convert_config_file(tmp_path, template_dir):
 
 
 class TestConvertHtmlCommand:
-    @patch("resumegen._cli.convert_html.render_pdf_from_html")
+    @patch("resumegen._cli.render_html.render_pdf_from_html")
     def test_interactive_prints_decorated_path(
         self, mock_render, html_file, convert_config_file, output_dir
     ):
@@ -41,7 +41,7 @@ class TestConvertHtmlCommand:
         result = runner.invoke(
             app,
             [
-                "convert-html",
+                "render-html",
                 str(html_file),
                 "--config",
                 str(convert_config_file),
@@ -51,7 +51,7 @@ class TestConvertHtmlCommand:
         assert "Configuration loaded successfully" in result.output
         assert f"PDF generated at: {output_path.resolve()}" in result.output
 
-    @patch("resumegen._cli.convert_html.render_pdf_from_html")
+    @patch("resumegen._cli.render_html.render_pdf_from_html")
     def test_no_interactive_prints_bare_path(
         self, mock_render, html_file, convert_config_file, output_dir
     ):
@@ -60,7 +60,7 @@ class TestConvertHtmlCommand:
         result = runner.invoke(
             app,
             [
-                "convert-html",
+                "render-html",
                 str(html_file),
                 "--config",
                 str(convert_config_file),
@@ -70,7 +70,7 @@ class TestConvertHtmlCommand:
         assert result.exit_code == 0
         assert result.output.strip() == str(output_path.resolve())
 
-    @patch("resumegen._cli.convert_html.render_pdf_from_html")
+    @patch("resumegen._cli.render_html.render_pdf_from_html")
     def test_assets_dir_defaults_to_config_template_dir(
         self, mock_render, html_file, convert_config_file, template_dir, output_dir
     ):
@@ -78,7 +78,7 @@ class TestConvertHtmlCommand:
         result = runner.invoke(
             app,
             [
-                "convert-html",
+                "render-html",
                 str(html_file),
                 "--config",
                 str(convert_config_file),
@@ -87,7 +87,7 @@ class TestConvertHtmlCommand:
         assert result.exit_code == 0
         assert mock_render.call_args.args[1] == template_dir
 
-    @patch("resumegen._cli.convert_html.render_pdf_from_html")
+    @patch("resumegen._cli.render_html.render_pdf_from_html")
     def test_assets_dir_option_forwarded(
         self, mock_render, html_file, convert_config_file, tmp_path, output_dir
     ):
@@ -97,7 +97,7 @@ class TestConvertHtmlCommand:
         result = runner.invoke(
             app,
             [
-                "convert-html",
+                "render-html",
                 str(html_file),
                 "--config",
                 str(convert_config_file),
@@ -108,7 +108,7 @@ class TestConvertHtmlCommand:
         assert result.exit_code == 0
         assert mock_render.call_args.args[1] == assets_dir
 
-    @patch("resumegen._cli.convert_html.render_pdf_from_html")
+    @patch("resumegen._cli.render_html.render_pdf_from_html")
     def test_bare_output_name_saved_under_config_output_dir(
         self, mock_render, html_file, convert_config_file, tmp_path
     ):
@@ -116,7 +116,7 @@ class TestConvertHtmlCommand:
         result = runner.invoke(
             app,
             [
-                "convert-html",
+                "render-html",
                 str(html_file),
                 "--config",
                 str(convert_config_file),
@@ -135,7 +135,7 @@ class TestConvertHtmlCommand:
     @pytest.mark.parametrize(
         "output_name", ["./custom.pdf", "nested/custom.pdf", "../custom.pdf"]
     )
-    @patch("resumegen._cli.convert_html.render_pdf_from_html")
+    @patch("resumegen._cli.render_html.render_pdf_from_html")
     def test_relative_output_path_resolves_against_cwd(
         self,
         mock_render,
@@ -150,7 +150,7 @@ class TestConvertHtmlCommand:
         result = runner.invoke(
             app,
             [
-                "convert-html",
+                "render-html",
                 str(html_file),
                 "--config",
                 str(convert_config_file),
@@ -163,7 +163,7 @@ class TestConvertHtmlCommand:
         assert call_args[2] == tmp_path
         assert call_args[3] == output_name
 
-    @patch("resumegen._cli.convert_html.render_pdf_from_html")
+    @patch("resumegen._cli.render_html.render_pdf_from_html")
     def test_absolute_output_path_ignores_config_output_dir(
         self, mock_render, html_file, convert_config_file, tmp_path
     ):
@@ -172,7 +172,7 @@ class TestConvertHtmlCommand:
         result = runner.invoke(
             app,
             [
-                "convert-html",
+                "render-html",
                 str(html_file),
                 "--config",
                 str(convert_config_file),
@@ -184,7 +184,7 @@ class TestConvertHtmlCommand:
         call_args = mock_render.call_args.args
         assert call_args[2] / call_args[3] == absolute
 
-    @patch("resumegen._cli.convert_html.render_pdf_from_html")
+    @patch("resumegen._cli.render_html.render_pdf_from_html")
     def test_output_dir_falls_back_to_config(
         self, mock_render, html_file, convert_config_file, tmp_path
     ):
@@ -192,7 +192,7 @@ class TestConvertHtmlCommand:
         result = runner.invoke(
             app,
             [
-                "convert-html",
+                "render-html",
                 str(html_file),
                 "--config",
                 str(convert_config_file),
@@ -202,7 +202,7 @@ class TestConvertHtmlCommand:
         assert mock_render.call_args.args[2] == tmp_path / "cfg_out"
         assert mock_render.call_args.args[3] is None
 
-    @patch("resumegen._cli.convert_html.render_pdf_from_html")
+    @patch("resumegen._cli.render_html.render_pdf_from_html")
     def test_output_dir_env_var_overrides_config(
         self, mock_render, html_file, convert_config_file, tmp_path, monkeypatch
     ):
@@ -212,7 +212,7 @@ class TestConvertHtmlCommand:
         result = runner.invoke(
             app,
             [
-                "convert-html",
+                "render-html",
                 str(html_file),
                 "--config",
                 str(convert_config_file),
@@ -233,12 +233,12 @@ class TestConvertHtmlCommand:
         self, error, message, html_file, convert_config_file, output_dir
     ):
         with patch(
-            "resumegen._cli.convert_html.render_pdf_from_html", side_effect=error
+            "resumegen._cli.render_html.render_pdf_from_html", side_effect=error
         ):
             result = runner.invoke(
                 app,
                 [
-                    "convert-html",
+                    "render-html",
                     str(html_file),
                     "--config",
                     str(convert_config_file),
