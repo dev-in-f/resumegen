@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 import dotenv
 import yaml
@@ -11,13 +12,14 @@ from resumegen._core.config import (
 
 
 def _install_default_config():
-    if not os.path.exists(RESUMEGEN_DATA_DIR):
-        os.makedirs(RESUMEGEN_DATA_DIR)
+    if not Path(RESUMEGEN_DATA_DIR).exists():
+        Path(RESUMEGEN_DATA_DIR).mkdir(parents=True, exist_ok=True)
     config_path = RESUMEGEN_DEFAULT_CONFIG_PATH
-    if not os.path.exists(config_path):
+    if not Path(config_path).exists():
         print(f"Creating default config at {config_path}")
         default_config = Config().model_dump(mode="json")
-        with open(config_path, "w") as f:
+        Path(config_path).parent.mkdir(parents=True, exist_ok=True)
+        with Path(config_path).open("w") as f:
             yaml.dump(default_config, f)
 
 
