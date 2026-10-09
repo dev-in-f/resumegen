@@ -13,7 +13,7 @@ Currently, the data structure available is fixed, but the Jinja templates and CS
 - [uv](https://github.com/astral-sh/uv)
 
 ```bash
-uv tool install git+https://codeberg.org/intothebeans/resumegen.git@v1.0.0
+uv tool install resumegen
 ```
 
 ## Usage
