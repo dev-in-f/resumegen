@@ -1,7 +1,7 @@
 [project]
 name = "resumegen"
 dynamic = ["version"]
-description = "An AI optional tool for rendering resumes from structured data"
+description = "A Python tool for rendering resumes from structured data with some LLM assistance on the side"
 readme = "README.md"
 authors = [{ name = "dev-in-f" }]
 requires-python = ">=3.13"
@@ -31,6 +31,13 @@ source = "uv-dynamic-versioning"
 [tool.uv-dynamic-versioning]
 fallback-version = "1.0.0"
 
+[tool.commitizen]
+name = "cz_conventional_commits"
+tag_format = "v$version"
+version_scheme = "pep440"
+version_provider = "scm"
+update_changelog_on_bump = true
+major_version_zero = true
 [dependency-groups]
 dev = [
     "commitizen",
@@ -77,11 +84,3 @@ ignore = ["TRY003"]
 
 [tool.pyright]
 ignore = ["tests/**"]
-
-
-[tool.commitizen]
-name = "cz_conventional_commits"
-tag_format = "$version"
-version_scheme = "pep440"
-version_provider = "uv"
-major_version_zero = true
